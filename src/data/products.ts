@@ -30,9 +30,10 @@ const SIZES = {
   accessories: ["One Size"],
 };
 
-type ProductInput = Omit<Product, "variants" | "colors" | "sizes"> & {
+type ProductInput = Omit<Product, "variants" | "colors" | "sizes" | "sizeChart"> & {
   colorSlugs: string[];
   sizeSet: keyof typeof SIZES;
+  sizeChart?: string;
 };
 
 function buildProduct(partial: ProductInput): Product {
@@ -40,6 +41,7 @@ function buildProduct(partial: ProductInput): Product {
   const colors = partial.colorSlugs.map((s) => COLORS[s]);
   return {
     ...partial,
+    sizeChart: partial.sizeChart ?? "",
     colors,
     sizes,
     variants: colors.map((color, i) => ({
