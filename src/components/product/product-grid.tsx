@@ -20,7 +20,7 @@ export function ProductGrid({
   };
 
   return (
-    <div className={cn("grid gap-4 md:gap-6", colClass[columns], className)}>
+    <div className={cn("grid gap-x-4 gap-y-8 md:gap-x-6 md:gap-y-10", colClass[columns], className)}>
       {products.map((product, i) => (
         <ProductCard
           key={product.id}

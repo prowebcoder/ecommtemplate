@@ -52,6 +52,7 @@ export class ProductService {
         careInstructions: null,
         shippingInfo: null,
         returnPolicy: null,
+        sizeChart: null,
         createdAt: p.createdAt,
         variants: p.variants,
       })

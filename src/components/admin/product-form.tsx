@@ -17,6 +17,10 @@ export type ProductFormInitial = {
   brand: string;
   categoryId: string | null;
   materials: string | null;
+  careInstructions: string | null;
+  shippingInfo: string | null;
+  returnPolicy: string | null;
+  sizeChart: string | null;
   isFeatured: boolean;
   isNew: boolean;
   isTrending: boolean;
@@ -68,6 +72,10 @@ export function ProductForm({ mode, categories, initial }: ProductFormProps) {
       brand: String(fd.get("brand")),
       categoryId: String(fd.get("categoryId") || "") || undefined,
       materials: String(fd.get("materials") || "") || undefined,
+      careInstructions: String(fd.get("careInstructions") || "") || undefined,
+      shippingInfo: String(fd.get("shippingInfo") || "") || undefined,
+      returnPolicy: String(fd.get("returnPolicy") || "") || undefined,
+      sizeChart: String(fd.get("sizeChart") || "") || undefined,
       imageUrls,
       variants: [
         {
@@ -213,14 +221,58 @@ export function ProductForm({ mode, categories, initial }: ProductFormProps) {
           </select>
         </div>
       </div>
-      <div>
-        <Label htmlFor="materials">Materials</Label>
-        <Input
-          id="materials"
-          name="materials"
-          defaultValue={initial?.materials ?? ""}
-          className="mt-1"
-        />
+      <div className="border-t pt-6 space-y-4">
+        <p className="text-xs font-semibold uppercase tracking-widest">Storefront product details</p>
+        <p className="text-sm text-muted-foreground -mt-2">
+          Shown on the product page tabs. Leave size chart empty to use the global chart from Store
+          content.
+        </p>
+        <div>
+          <Label htmlFor="materials">Materials</Label>
+          <Textarea
+            id="materials"
+            name="materials"
+            defaultValue={initial?.materials ?? ""}
+            className="mt-1 min-h-[72px]"
+          />
+        </div>
+        <div>
+          <Label htmlFor="careInstructions">Care instructions</Label>
+          <Textarea
+            id="careInstructions"
+            name="careInstructions"
+            defaultValue={initial?.careInstructions ?? ""}
+            className="mt-1 min-h-[72px]"
+          />
+        </div>
+        <div>
+          <Label htmlFor="shippingInfo">Shipping</Label>
+          <Textarea
+            id="shippingInfo"
+            name="shippingInfo"
+            defaultValue={initial?.shippingInfo ?? ""}
+            className="mt-1 min-h-[72px]"
+          />
+        </div>
+        <div>
+          <Label htmlFor="returnPolicy">Returns</Label>
+          <Textarea
+            id="returnPolicy"
+            name="returnPolicy"
+            defaultValue={initial?.returnPolicy ?? ""}
+            className="mt-1 min-h-[72px]"
+          />
+        </div>
+        <div>
+          <Label htmlFor="sizeChart">Size chart (optional override)</Label>
+          <Textarea
+            id="sizeChart"
+            name="sizeChart"
+            defaultValue={initial?.sizeChart ?? ""}
+            placeholder="Leave blank to use the global size chart from Admin → Store content"
+            className="mt-1 min-h-[160px] font-mono text-xs"
+          />
+        </div>
       </div>
       <div>
         <Label htmlFor="imageUrls">Image URLs (one per line)</Label>

@@ -21,11 +21,18 @@ export const createProductSchema = z.object({
   categoryId: z.string().optional(),
   vendorId: z.string().optional(),
   materials: z.string().optional(),
+  careInstructions: z.string().optional(),
+  shippingInfo: z.string().optional(),
+  returnPolicy: z.string().optional(),
+  sizeChart: z.string().optional(),
   imageUrls: z.array(z.string().url()).min(1),
   variants: z.array(variantSchema).min(1),
   approvalStatus: z.enum(["DRAFT", "PENDING_REVIEW", "APPROVED", "REJECTED"]).optional(),
   isActive: z.boolean().optional(),
   isFeatured: z.boolean().optional(),
+  isNew: z.boolean().optional(),
+  isTrending: z.boolean().optional(),
+  isBestSeller: z.boolean().optional(),
 });
 
 export const updateProductSchema = createProductSchema;

@@ -7,6 +7,7 @@ import {
 } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { heroImage } from "../src/lib/catalog-images";
+import { DEFAULT_PRODUCT_COPY, DEFAULT_SIZE_CHART } from "../src/lib/size-chart-defaults";
 import { COLLECTIONS, PRODUCTS, VENDORS } from "./seed-data";
 
 const prisma = new PrismaClient();
@@ -30,6 +31,9 @@ async function upsertProduct(
     categoryId,
     vendorId,
     materials: "See product description.",
+    careInstructions: DEFAULT_PRODUCT_COPY.careInstructions,
+    shippingInfo: DEFAULT_PRODUCT_COPY.shippingInfo,
+    returnPolicy: DEFAULT_PRODUCT_COPY.returnPolicy,
     approvalStatus: ProductApprovalStatus.APPROVED,
     isActive: true,
     isFeatured: data.isFeatured ?? false,
@@ -228,6 +232,12 @@ async function main() {
     where: { key: "homepage.hero" },
     update: { value: heroValue },
     create: { key: "homepage.hero", value: heroValue },
+  });
+
+  await prisma.siteSetting.upsert({
+    where: { key: "storefront.sizeChart" },
+    update: { value: DEFAULT_SIZE_CHART },
+    create: { key: "storefront.sizeChart", value: DEFAULT_SIZE_CHART },
   });
 
   for (const page of [

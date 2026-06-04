@@ -10,10 +10,13 @@ export const metadata = buildMetadata({
 
 export default function LoginPage() {
   return (
-    <div className="container mx-auto max-w-lg px-4 py-12 md:py-16">
-      <h1 className="font-serif text-3xl mb-2">Sign In</h1>
+    <div className="container mx-auto max-w-md px-4 py-12 md:py-16">
+      <p className="text-[11px] font-medium uppercase tracking-[0.3em] text-muted-foreground mb-2">
+        Account
+      </p>
+      <h1 className="font-serif text-3xl mb-2">Sign in</h1>
       <p className="text-sm text-muted-foreground mb-8">
-        Welcome back to Veloire
+        Welcome back — shop your favorites and track orders.
       </p>
       <Suspense fallback={<p className="text-sm text-muted-foreground">Loading...</p>}>
         <LoginForm />

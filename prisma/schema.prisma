@@ -242,6 +242,7 @@ model Product {
   careInstructions String?  @db.Text
   shippingInfo     String?  @db.Text
   returnPolicy     String?  @db.Text
+  sizeChart        String?  @db.Text
   categoryId       String?
   vendorId         String?
   approvalStatus   ProductApprovalStatus @default(DRAFT)

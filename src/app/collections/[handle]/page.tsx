@@ -42,33 +42,52 @@ export default async function CollectionPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      {collection.image && (
-        <div className="relative h-48 md:h-64 overflow-hidden bg-secondary">
-          <Image
-            src={collection.image}
-            alt={collection.title}
-            fill
-            className="object-cover"
-            priority
-            sizes="100vw"
-          />
-          <div className="absolute inset-0 bg-black/40 flex items-end">
-            <div className="container mx-auto px-4 pb-8 text-white">
-              <h1 className="font-serif text-3xl md:text-4xl">{collection.title}</h1>
-              {collection.description && (
-                <p className="mt-2 text-sm text-white/80 max-w-lg">{collection.description}</p>
-              )}
+      <div className="border-b border-border/60">
+        {collection.image ? (
+          <div className="relative h-52 md:h-72 overflow-hidden bg-foreground">
+            <Image
+              src={collection.image}
+              alt={collection.title}
+              fill
+              className="object-cover opacity-95"
+              priority
+              sizes="100vw"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-black/10" />
+            <div className="absolute inset-0 flex items-end">
+              <div className="container mx-auto px-4 pb-10 md:pb-12 text-white">
+                <p className="text-[11px] font-medium uppercase tracking-[0.35em] text-white/60 mb-3">
+                  Collection
+                </p>
+                <h1 className="font-serif text-4xl md:text-6xl tracking-tight text-balance">
+                  {collection.title}
+                </h1>
+                {collection.description && (
+                  <p className="mt-3 text-sm md:text-base text-white/75 max-w-xl leading-relaxed">
+                    {collection.description}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
-      {!collection.image && (
-        <div className="container mx-auto px-4 pt-12">
-          <h1 className="font-serif text-3xl md:text-4xl">{collection.title}</h1>
-        </div>
-      )}
+        ) : (
+          <div className="container mx-auto px-4 py-12 md:py-16 bg-secondary/25">
+            <p className="text-[11px] font-medium uppercase tracking-[0.35em] text-muted-foreground mb-3">
+              Collection
+            </p>
+            <h1 className="font-serif text-4xl md:text-6xl tracking-tight text-balance">
+              {collection.title}
+            </h1>
+            {collection.description && (
+              <p className="mt-3 text-sm md:text-base text-muted-foreground max-w-xl leading-relaxed">
+                {collection.description}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
 
-      <div className="container mx-auto px-4 py-8 md:py-12">
+      <div className="container mx-auto px-4 py-10 md:py-14">
         <Suspense fallback={<div className="animate-pulse h-96 bg-secondary" />}>
           <CollectionListing collectionHandle={handle} />
         </Suspense>

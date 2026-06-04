@@ -6,7 +6,6 @@ import { motion } from "framer-motion";
 import { Plus } from "lucide-react";
 import type { Product } from "@/types/product";
 import { PriceDisplay } from "@/components/shared/price-display";
-import { RatingStars } from "@/components/shared/rating-stars";
 import { WishlistButton } from "@/components/shared/wishlist-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -47,8 +46,8 @@ export function ProductCard({
   return (
     <motion.article
       className={cn("group relative", className)}
-      whileHover={{ y: -4 }}
-      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      whileHover={{ y: -2 }}
+      transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
     >
       <Link href={`/products/${product.handle}`} className="block">
         <div className="relative aspect-[3/4] overflow-hidden bg-secondary">
@@ -91,14 +90,13 @@ export function ProductCard({
           </div>
         </div>
 
-        <div className="mt-3 space-y-1">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider">
+        <div className="mt-3.5 space-y-1.5">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-[0.15em]">
             {product.brand}
           </p>
-          <h3 className="text-sm font-medium leading-snug line-clamp-2 group-hover:underline underline-offset-2">
+          <h3 className="text-sm font-medium leading-snug line-clamp-2 group-hover:text-foreground/80 transition-colors">
             {product.title}
           </h3>
-          <RatingStars rating={product.rating} size="sm" />
           <PriceDisplay
             price={product.price}
             compareAtPrice={product.compareAtPrice}

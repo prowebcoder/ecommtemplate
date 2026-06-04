@@ -1,4 +1,5 @@
 import { heroImage } from "@/lib/catalog-images";
+import { DEFAULT_SIZE_CHART } from "@/lib/size-chart-defaults";
 import { prisma } from "@/server/db/prisma";
 import { mapDbProductToCard } from "@/server/mappers/product.mapper";
 import type { Product } from "@/types/product";
@@ -196,6 +197,17 @@ export class StorefrontService {
       orderBy: { sortOrder: "asc" },
       select: { title: true, handle: true },
     });
+  }
+
+  async getSizeChart() {
+    const setting = await prisma.siteSetting.findUnique({
+      where: { key: "storefront.sizeChart" },
+    });
+    const value = setting?.value as { title?: string; content?: string } | undefined;
+    return {
+      title: value?.title?.trim() || DEFAULT_SIZE_CHART.title,
+      content: value?.content?.trim() || DEFAULT_SIZE_CHART.content,
+    };
   }
 
   async getHomeHero() {

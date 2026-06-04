@@ -52,6 +52,10 @@ export class VendorProductService {
         categoryId: input.categoryId,
         vendorId,
         materials: input.materials,
+        careInstructions: input.careInstructions,
+        shippingInfo: input.shippingInfo,
+        returnPolicy: input.returnPolicy,
+        sizeChart: input.sizeChart,
         approvalStatus: "DRAFT",
         isActive: false,
         images: {
@@ -101,6 +105,10 @@ export class VendorProductService {
         brand: input.brand,
         categoryId: input.categoryId,
         materials: input.materials,
+        careInstructions: input.careInstructions,
+        shippingInfo: input.shippingInfo,
+        returnPolicy: input.returnPolicy,
+        sizeChart: input.sizeChart,
         ...(product.approvalStatus === "APPROVED"
           ? { approvalStatus: "PENDING_REVIEW", isActive: false }
           : {}),

@@ -10,6 +10,7 @@ type DbProduct = {
   careInstructions: string | null;
   shippingInfo: string | null;
   returnPolicy: string | null;
+  sizeChart: string | null;
   rating: number;
   reviewCount: number;
   isFeatured?: boolean;
@@ -94,6 +95,7 @@ export function mapDbProductToProduct(product: DbProduct): Product {
     careInstructions: product.careInstructions ?? "",
     shippingInfo: product.shippingInfo ?? "",
     returnPolicy: product.returnPolicy ?? "",
+    sizeChart: product.sizeChart ?? "",
     category: categoryFromSlug(product.category?.slug),
     tags: product.tags ?? [],
     price: minPrice,

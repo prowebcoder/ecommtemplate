@@ -41,9 +41,9 @@ export function RecentlyViewed({ excludeHandle }: RecentlyViewedProps) {
   if (!products.length) return null;
 
   return (
-    <section className="mt-16 md:mt-24">
-      <SectionHeading title="Recently Viewed" />
-      <div className="mt-8">
+    <section className="mt-16 md:mt-24 pt-12 border-t border-border/80">
+      <SectionHeading eyebrow="Picked up where you left off" title="Recently viewed" />
+      <div className="mt-8 md:mt-10">
         <ProductGrid products={products} columns={4} />
       </div>
     </section>

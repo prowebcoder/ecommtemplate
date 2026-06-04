@@ -30,6 +30,7 @@ export type Product = {
   careInstructions: string;
   shippingInfo: string;
   returnPolicy: string;
+  sizeChart: string;
   category: ProductCategory;
   tags: string[];
   price: number;
