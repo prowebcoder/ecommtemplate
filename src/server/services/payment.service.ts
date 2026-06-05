@@ -3,12 +3,17 @@ import {
   PaymentProvider,
   PaymentStatus,
   OrderStatus,
+  type Prisma,
 } from "@prisma/client";
 import { prisma } from "@/server/db/prisma";
 import { AppError } from "@/server/errors/app-error";
 import { getRazorpayClient, getRazorpayKeyId } from "@/lib/razorpay";
 import { isRazorpayConfigured } from "@/lib/payments";
 import { orderService } from "@/server/services/order.service";
+
+function toPaymentMetadata(value: unknown): Prisma.InputJsonValue {
+  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
 
 export class PaymentService {
   async createRazorpayCheckout(orderId: string, userId: string) {
@@ -42,7 +47,7 @@ export class PaymentService {
         amount: order.total,
         currency: "INR",
         providerOrderId: rzpOrder.id,
-        metadata: { razorpayOrder: rzpOrder },
+        metadata: toPaymentMetadata({ razorpayOrder: rzpOrder }),
       },
     });
 
@@ -105,12 +110,14 @@ export class PaymentService {
         data: {
           status: PaymentStatus.CAPTURED,
           providerPaymentId: input.razorpay_payment_id,
-          metadata: {
-            ...(typeof payment.metadata === "object" && payment.metadata
+          metadata: toPaymentMetadata({
+            ...(typeof payment.metadata === "object" &&
+            payment.metadata &&
+            !Array.isArray(payment.metadata)
               ? payment.metadata
               : {}),
             verifiedAt: new Date().toISOString(),
-          },
+          }),
         },
       });
     }
