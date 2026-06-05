@@ -8,18 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-
-type Coupon = {
-  id: string;
-  code: string;
-  type: "PERCENTAGE" | "FIXED";
-  value: { toString(): string };
-  minOrderAmount: { toString(): string } | null;
-  maxUses: number | null;
-  usedCount: number;
-  isActive: boolean;
-  expiresAt: string | null;
-};
+import type { Coupon } from "@prisma/client";
 
 export function CouponManager({ initial }: { initial: Coupon[] }) {
   const router = useRouter();
