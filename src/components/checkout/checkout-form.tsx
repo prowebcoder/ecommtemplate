@@ -2,19 +2,25 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { CreditCard, IndianRupee, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { normalizeOrderItemImage } from "@/lib/catalog-images";
 import { useCartStore } from "@/stores/cart-store";
-import { useAuthStore } from "@/stores/auth-store";
-import { formatPrice } from "@/lib/utils";
-import type { Order } from "@/types/user";
+import { formatPrice, cn } from "@/lib/utils";
+import type { CheckoutPaymentMethod } from "@/lib/payments";
+
+declare global {
+  interface Window {
+    Razorpay?: new (options: Record<string, unknown>) => { open: () => void };
+  }
+}
 
 const schema = z.object({
   email: z.string().email(),
@@ -23,24 +29,39 @@ const schema = z.object({
   address: z.string().min(5),
   city: z.string().min(1),
   state: z.string().min(1),
-  postalCode: z.string().min(5),
-  phone: z.string().min(10),
+  postalCode: z.string().regex(/^\d{6}$/, "Enter a valid 6-digit PIN code"),
+  phone: z.string().regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit Indian mobile number"),
 });
 
 type FormData = z.infer<typeof schema>;
 
-function generateOrderNumber() {
-  return `VL-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+type CheckoutFormProps = {
+  razorpayEnabled: boolean;
+};
+
+function loadRazorpayScript() {
+  return new Promise<boolean>((resolve) => {
+    if (window.Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
 }
 
-export function CheckoutForm() {
+export function CheckoutForm({ razorpayEnabled }: CheckoutFormProps) {
   const router = useRouter();
-  const { items, getSubtotal, getShipping, getTotal, clearCart, couponDiscount } =
+  const { data: session, status } = useSession();
+  const { items, getSubtotal, getShipping, getTotal, clearCart, couponCode, couponDiscount } =
     useCartStore();
-  const user = useAuthStore((s) => s.user);
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const addOrder = useAuthStore((s) => s.addOrder);
-  const addAddress = useAuthStore((s) => s.addAddress);
+  const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>(
+    razorpayEnabled ? "razorpay" : "cod"
+  );
+  const [error, setError] = useState("");
 
   const subtotal = getSubtotal();
   const shipping = getShipping();
@@ -55,65 +76,139 @@ export function CheckoutForm() {
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
   useEffect(() => {
-    if (user) {
-      const defaultAddr = user.addresses.find((a) => a.isDefault);
+    if (session?.user) {
       reset({
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        phone: user.phone ?? "",
-        address: defaultAddr?.line1 ?? "",
-        city: defaultAddr?.city ?? "",
-        state: defaultAddr?.state ?? "",
-        postalCode: defaultAddr?.postalCode ?? "",
+        email: session.user.email ?? "",
+        firstName: session.user.name?.split(" ")[0] ?? "",
+        lastName: session.user.name?.split(" ").slice(1).join(" ") ?? "",
+        phone: "",
+        address: "",
+        city: "",
+        state: "",
+        postalCode: "",
       });
     }
-  }, [user, reset]);
+  }, [session, reset]);
 
   const onSubmit = async (data: FormData) => {
-    if (!isAuthenticated) {
+    setError("");
+    if (status !== "authenticated" || !session?.user) {
       router.push(`/account/login?redirect=${encodeURIComponent("/checkout")}`);
       return;
     }
 
-    await new Promise((r) => setTimeout(r, 1200));
+    try {
+      const syncRes = await fetch("/api/cart/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: items.map((item) => ({
+            handle: item.handle,
+            size: item.size,
+            color: item.color,
+            quantity: item.quantity,
+          })),
+          couponCode,
+        }),
+      });
+      if (!syncRes.ok) {
+        const err = await syncRes.json().catch(() => ({}));
+        throw new Error(err.message ?? err.error ?? "Could not sync cart");
+      }
 
-    const order: Order = {
-      id: `order-${Date.now()}`,
-      orderNumber: generateOrderNumber(),
-      status: "confirmed",
-      createdAt: new Date().toISOString(),
-      items: items.map((item) => ({
-        id: item.id,
-        handle: item.handle,
-        title: item.title,
-        image: normalizeOrderItemImage(item),
-        quantity: item.quantity,
-        price: item.price,
-        size: item.size,
-        color: item.color,
-      })),
-      subtotal,
-      shipping,
-      total,
-    };
+      const orderRes = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: data.email,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          line1: data.address,
+          city: data.city,
+          state: data.state,
+          postalCode: data.postalCode,
+          phone: data.phone,
+        }),
+      });
+      if (!orderRes.ok) {
+        const err = await orderRes.json().catch(() => ({}));
+        throw new Error(err.message ?? err.error ?? "Could not create order");
+      }
+      const order = await orderRes.json();
 
-    addOrder(order);
+      if (paymentMethod === "cod") {
+        const codRes = await fetch("/api/payments/cod", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId: order.id }),
+        });
+        if (!codRes.ok) {
+          const err = await codRes.json().catch(() => ({}));
+          throw new Error(err.message ?? err.error ?? "Could not confirm COD order");
+        }
+        clearCart();
+        router.push(`/account/orders?placed=${order.orderNumber}`);
+        return;
+      }
 
-    addAddress({
-      firstName: data.firstName,
-      lastName: data.lastName,
-      line1: data.address,
-      city: data.city,
-      state: data.state,
-      postalCode: data.postalCode,
-      country: "India",
-      phone: data.phone,
-      isDefault: !user?.addresses.length,
-    });
+      const payRes = await fetch("/api/payments/razorpay/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: order.id }),
+      });
+      if (!payRes.ok) {
+        const err = await payRes.json().catch(() => ({}));
+        throw new Error(err.message ?? err.error ?? "Could not start payment");
+      }
+      const checkout = await payRes.json();
 
-    clearCart();
-    router.push("/account/orders");
+      const loaded = await loadRazorpayScript();
+      if (!loaded || !window.Razorpay) {
+        throw new Error("Payment gateway failed to load. Try again or choose Cash on delivery.");
+      }
+
+      const rzp = new window.Razorpay({
+        key: checkout.keyId,
+        amount: checkout.amount,
+        currency: checkout.currency,
+        name: "Veloire",
+        description: `Order ${checkout.orderNumber}`,
+        order_id: checkout.razorpayOrderId,
+        prefill: checkout.customer,
+        theme: { color: "#171717" },
+        handler: async (response: {
+          razorpay_order_id: string;
+          razorpay_payment_id: string;
+          razorpay_signature: string;
+        }) => {
+          const verifyRes = await fetch("/api/payments/razorpay/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              orderId: order.id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            }),
+          });
+          if (!verifyRes.ok) {
+            setError("Payment received but verification failed. Contact support with your order number.");
+            return;
+          }
+          clearCart();
+          router.push(`/account/orders?placed=${checkout.orderNumber}`);
+        },
+        modal: {
+          ondismiss: () => {
+            setError("Payment cancelled. Your order is saved — you can retry from your account.");
+            router.push("/account/orders");
+          },
+        },
+      });
+      rzp.open();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Checkout failed");
+    }
   };
 
   if (!items.length) {
@@ -129,17 +224,22 @@ export function CheckoutForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="grid gap-12 lg:grid-cols-2">
-      {!isAuthenticated && (
+      {status === "unauthenticated" && (
         <div className="lg:col-span-2 rounded-sm border bg-secondary/50 px-4 py-3 text-sm">
           <Link href="/account/login?redirect=%2Fcheckout" className="font-medium underline">
             Sign in
           </Link>{" "}
-          to save your order to your account, or continue below as a guest (order won&apos;t be
-          saved until you sign in before placing).
+          to complete your purchase. Orders are saved to your account after payment.
         </div>
       )}
 
-      <div className="space-y-6">
+      {error && (
+        <div className="lg:col-span-2 rounded-sm border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
+
+      <div className="space-y-8">
         <div>
           <h2 className="font-serif text-xl mb-4">Contact</h2>
           <Label htmlFor="checkout-email">Email</Label>
@@ -150,15 +250,15 @@ export function CheckoutForm() {
         </div>
 
         <div>
-          <h2 className="font-serif text-xl mb-4">Shipping Address</h2>
+          <h2 className="font-serif text-xl mb-4">Shipping address</h2>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="firstName">First Name</Label>
+                <Label htmlFor="firstName">First name</Label>
                 <Input id="firstName" className="mt-1.5" {...register("firstName")} />
               </div>
               <div>
-                <Label htmlFor="lastName">Last Name</Label>
+                <Label htmlFor="lastName">Last name</Label>
                 <Input id="lastName" className="mt-1.5" {...register("lastName")} />
               </div>
             </div>
@@ -178,20 +278,48 @@ export function CheckoutForm() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="postalCode">PIN Code</Label>
+                <Label htmlFor="postalCode">PIN code</Label>
                 <Input id="postalCode" className="mt-1.5" {...register("postalCode")} />
+                {errors.postalCode && (
+                  <p className="text-xs text-destructive mt-1">{errors.postalCode.message}</p>
+                )}
               </div>
               <div>
-                <Label htmlFor="phone">Phone</Label>
-                <Input id="phone" className="mt-1.5" {...register("phone")} />
+                <Label htmlFor="phone">Mobile (+91)</Label>
+                <Input id="phone" className="mt-1.5" placeholder="9876543210" {...register("phone")} />
+                {errors.phone && (
+                  <p className="text-xs text-destructive mt-1">{errors.phone.message}</p>
+                )}
               </div>
             </div>
           </div>
         </div>
+
+        <div>
+          <h2 className="font-serif text-xl mb-4">Payment</h2>
+          <div className="space-y-3">
+            {razorpayEnabled && (
+              <PaymentOption
+                selected={paymentMethod === "razorpay"}
+                onSelect={() => setPaymentMethod("razorpay")}
+                icon={CreditCard}
+                title="Pay online"
+                detail="UPI · Cards · Netbanking · Wallets via Razorpay"
+              />
+            )}
+            <PaymentOption
+              selected={paymentMethod === "cod"}
+              onSelect={() => setPaymentMethod("cod")}
+              icon={Truck}
+              title="Cash on delivery"
+              detail="Pay in cash when your order is delivered"
+            />
+          </div>
+        </div>
       </div>
 
-      <div className="lg:sticky lg:top-24 h-fit border p-6 space-y-4">
-        <h2 className="font-serif text-xl">Order Summary</h2>
+      <div className="lg:sticky lg:top-24 h-fit border p-6 space-y-4 rounded-sm bg-card">
+        <h2 className="font-serif text-xl">Order summary</h2>
         <ul className="space-y-3 max-h-60 overflow-y-auto">
           {items.map((item) => (
             <li key={item.id} className="flex justify-between text-sm gap-4">
@@ -209,7 +337,7 @@ export function CheckoutForm() {
             <span>{formatPrice(subtotal)}</span>
           </div>
           {discount > 0 && (
-            <div className="flex justify-between text-green-700">
+            <div className="flex justify-between text-emerald-700">
               <span>Discount</span>
               <span>-{formatPrice(discount)}</span>
             </div>
@@ -219,21 +347,64 @@ export function CheckoutForm() {
             <span>{shipping === 0 ? "Free" : formatPrice(shipping)}</span>
           </div>
           <div className="flex justify-between font-semibold text-base pt-2">
-            <span>Total</span>
+            <span className="inline-flex items-center gap-1">
+              <IndianRupee className="h-4 w-4" />
+              Total
+            </span>
             <span>{formatPrice(total)}</span>
           </div>
         </div>
         <Button type="submit" variant="luxury" className="w-full" disabled={isSubmitting}>
           {isSubmitting
             ? "Processing..."
-            : isAuthenticated
-              ? "Place Order"
-              : "Sign In to Place Order"}
+            : paymentMethod === "cod"
+              ? "Place COD order"
+              : "Pay securely"}
         </Button>
-        <p className="text-xs text-center text-muted-foreground">
-          Demo checkout — no real payment processed
+        <p className="text-[11px] text-center text-muted-foreground leading-relaxed">
+          {paymentMethod === "razorpay"
+            ? "Secured by Razorpay. Supports UPI, Indian cards & netbanking."
+            : "No online payment now. Pay the delivery partner in cash on arrival."}
         </p>
       </div>
     </form>
+  );
+}
+
+function PaymentOption({
+  selected,
+  onSelect,
+  icon: Icon,
+  title,
+  detail,
+}: {
+  selected: boolean;
+  onSelect: () => void;
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  detail: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={cn(
+        "w-full flex items-start gap-3 rounded-sm border p-4 text-left transition-colors",
+        selected ? "border-foreground bg-secondary/40" : "border-border hover:border-foreground/30"
+      )}
+    >
+      <span
+        className={cn(
+          "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full",
+          selected ? "bg-foreground text-background" : "bg-secondary"
+        )}
+      >
+        <Icon className="h-4 w-4" />
+      </span>
+      <span>
+        <span className="block text-sm font-medium">{title}</span>
+        <span className="block text-xs text-muted-foreground mt-0.5">{detail}</span>
+      </span>
+    </button>
   );
 }

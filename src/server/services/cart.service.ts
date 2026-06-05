@@ -105,6 +105,52 @@ export class CartService {
     return this.getOrCreate(userId, sessionId);
   }
 
+  async syncFromClient(
+    userId: string,
+    items: { handle: string; size: string; color: string; quantity: number }[],
+    couponCode?: string | null
+  ) {
+    const cartRecord = await this.resolveRecord(userId, undefined);
+    await prisma.cartItem.deleteMany({ where: { cartId: cartRecord.id } });
+
+    for (const item of items) {
+      const product = await prisma.product.findFirst({
+        where: { handle: item.handle, isActive: true, approvalStatus: "APPROVED" },
+        include: { variants: { include: { inventory: true } } },
+      });
+      if (!product) throw new AppError(`Product not found: ${item.handle}`, 404);
+
+      const variant = product.variants.find(
+        (v) =>
+          v.isActive &&
+          v.colorSlug === item.color &&
+          (v.sizeValue === item.size || v.sizeLabel === item.size)
+      );
+      if (!variant) {
+        throw new AppError(`Variant not found for ${item.handle} (${item.color}/${item.size})`, 404);
+      }
+
+      const available =
+        (variant.inventory?.quantity ?? 0) - (variant.inventory?.reservedQuantity ?? 0);
+      if (available < item.quantity) throw new AppError(`Insufficient stock for ${product.title}`);
+
+      await prisma.cartItem.create({
+        data: {
+          cartId: cartRecord.id,
+          variantId: variant.id,
+          quantity: item.quantity,
+        },
+      });
+    }
+
+    await prisma.cart.update({
+      where: { id: cartRecord.id },
+      data: { couponCode: couponCode?.toUpperCase() || null },
+    });
+
+    return this.getOrCreate(userId, undefined);
+  }
+
   async applyCoupon(
     userId: string | undefined,
     sessionId: string | undefined,

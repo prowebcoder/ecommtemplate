@@ -1,5 +1,6 @@
 import { requireSuperAdmin } from "@/lib/auth-utils";
 import { adminOrderService } from "@/server/services/admin-order.service";
+import { orderService } from "@/server/services/order.service";
 import { toErrorResponse } from "@/server/errors/app-error";
 import { z } from "zod";
 import type { OrderStatus } from "@prisma/client";
@@ -25,7 +26,7 @@ export async function PATCH(request: Request, { params }: Props) {
     await requireSuperAdmin();
     const { id } = await params;
     const { status } = updateSchema.parse(await request.json());
-    const order = await adminOrderService.updateStatus(id, status as OrderStatus);
+    const order = await orderService.updateStatus(id, status as OrderStatus);
     return Response.json(order);
   } catch (error) {
     return toErrorResponse(error);
