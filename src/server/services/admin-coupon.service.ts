@@ -13,6 +13,17 @@ export type CreateCouponInput = {
   isActive?: boolean;
 };
 
+export type UpdateCouponInput = Partial<{
+  code: string;
+  type: CouponType;
+  value: number;
+  minOrderAmount: number | null;
+  maxUses: number | null;
+  startsAt: string | null;
+  expiresAt: string | null;
+  isActive: boolean;
+}>;
+
 export class AdminCouponService {
   async list() {
     return prisma.coupon.findMany({ orderBy: { createdAt: "desc" } });
@@ -37,7 +48,7 @@ export class AdminCouponService {
     });
   }
 
-  async update(id: string, input: Partial<CreateCouponInput>) {
+  async update(id: string, input: UpdateCouponInput) {
     return prisma.coupon.update({
       where: { id },
       data: {
