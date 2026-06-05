@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { AuthSessionProvider } from "@/providers/session-provider";
+import { CartSyncProvider } from "@/components/providers/cart-sync-provider";
 
 export function AppProviders({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
@@ -19,7 +20,9 @@ export function AppProviders({ children }: { children: ReactNode }) {
 
   return (
     <AuthSessionProvider>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <CartSyncProvider>
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      </CartSyncProvider>
     </AuthSessionProvider>
   );
 }

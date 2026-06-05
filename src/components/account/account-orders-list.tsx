@@ -2,6 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { formatPrice } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,6 +27,7 @@ type Order = {
   total: { toString(): string } | number;
   items: OrderItem[];
   payments?: { provider: string; status: string }[];
+  shipment?: { status: string; trackingNumber: string | null } | null;
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -35,6 +38,14 @@ const STATUS_LABELS: Record<string, string> = {
   REFUNDED: "Refunded",
 };
 
+const SHIPMENT_LABELS: Record<string, string> = {
+  PENDING: "Preparing",
+  LABEL_CREATED: "Label created",
+  IN_TRANSIT: "In transit",
+  DELIVERED: "Delivered",
+  FAILED: "Delivery issue",
+};
+
 export function AccountOrdersList({
   orders,
   placed,
@@ -42,6 +53,25 @@ export function AccountOrdersList({
   orders: Order[];
   placed?: string;
 }) {
+  const router = useRouter();
+  const [cancelling, setCancelling] = useState<string | null>(null);
+
+  const cancelOrder = async (orderId: string) => {
+    if (!confirm("Cancel this order?")) return;
+    setCancelling(orderId);
+    try {
+      const res = await fetch(`/api/orders/${orderId}/cancel`, { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(err.message ?? "Could not cancel order");
+        return;
+      }
+      router.refresh();
+    } finally {
+      setCancelling(null);
+    }
+  };
+
   return (
     <div>
       <h1 className="font-serif text-2xl mb-6">Orders</h1>
@@ -113,9 +143,28 @@ export function AccountOrdersList({
                     </p>
                   </div>
                 ))}
-                <p className="mt-4 text-sm font-semibold text-right">
-                  Total: {formatPrice(Number(order.total))}
-                </p>
+                {order.shipment && order.status !== "CANCELLED" && (
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Shipment: {SHIPMENT_LABELS[order.shipment.status] ?? order.shipment.status}
+                    {order.shipment.trackingNumber &&
+                      ` · Tracking ${order.shipment.trackingNumber}`}
+                  </p>
+                )}
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-sm font-semibold">
+                    Total: {formatPrice(Number(order.total))}
+                  </p>
+                  {order.status === "PENDING" && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={cancelling === order.id}
+                      onClick={() => cancelOrder(order.id)}
+                    >
+                      {cancelling === order.id ? "Cancelling..." : "Cancel order"}
+                    </Button>
+                  )}
+                </div>
               </div>
             );
           })}

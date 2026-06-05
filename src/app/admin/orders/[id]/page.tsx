@@ -3,6 +3,7 @@ import Link from "next/link";
 import { adminOrderService } from "@/server/services/admin-order.service";
 import { formatPrice } from "@/lib/utils";
 import { OrderStatusSelect } from "@/components/admin/order-status-select";
+import { ShipmentStatusSelect } from "@/components/admin/shipment-status-select";
 import { Badge } from "@/components/ui/badge";
 
 type Props = { params: Promise<{ id: string }> };
@@ -44,8 +45,15 @@ export default async function AdminOrderDetailPage({ params }: Props) {
         </Badge>
       </div>
 
-      <div className="mb-6">
+      <div className="mb-6 flex flex-wrap gap-6 items-start">
         <OrderStatusSelect orderId={order.id} current={order.status} />
+        {order.shipment && (
+          <ShipmentStatusSelect
+            orderId={order.id}
+            current={order.shipment.status}
+            trackingNumber={order.shipment.trackingNumber}
+          />
+        )}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 mb-8">

@@ -9,4 +9,7 @@ export const siteConfig = {
   defaultShipping: 99,
   productsPerPage: 12,
   lowStockThreshold: 5,
+  /** Display-only: prices are inclusive of GST (common for Indian D2C) */
+  pricesIncludeGst: true,
+  gstLabel: "GST (included)",
 } as const;

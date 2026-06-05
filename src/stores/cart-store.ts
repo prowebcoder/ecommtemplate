@@ -26,6 +26,7 @@ type CartStore = {
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   applyCoupon: (code: string) => boolean;
+  setCoupon: (code: string, discountRate: number) => void;
   removeCoupon: () => void;
   clearCart: () => void;
   getSubtotal: () => number;
@@ -131,6 +132,9 @@ export const useCartStore = create<CartStore>()(
         set({ couponCode: code.toUpperCase(), couponDiscount: discount });
         return true;
       },
+
+      setCoupon: (code, discountRate) =>
+        set({ couponCode: code.toUpperCase(), couponDiscount: discountRate }),
 
       removeCoupon: () =>
         set({ couponCode: null, couponDiscount: 0 }),

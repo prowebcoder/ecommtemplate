@@ -1,16 +1,7 @@
-"use client";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/stores/auth-store";
-
-export default function AccountPage() {
-  const router = useRouter();
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-
-  useEffect(() => {
-    router.replace(isAuthenticated ? "/account/profile" : "/account/login");
-  }, [isAuthenticated, router]);
-
-  return null;
+export default async function AccountPage() {
+  const session = await auth();
+  redirect(session?.user ? "/account/profile" : "/account/login");
 }

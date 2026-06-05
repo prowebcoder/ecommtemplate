@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { useCartStore } from "@/stores/cart-store";
 import { formatPrice, cn } from "@/lib/utils";
 import type { CheckoutPaymentMethod } from "@/lib/payments";
+import { siteConfig } from "@/config/site";
 
 declare global {
   interface Window {
@@ -76,19 +77,33 @@ export function CheckoutForm({ razorpayEnabled }: CheckoutFormProps) {
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
   useEffect(() => {
-    if (session?.user) {
+    if (status !== "authenticated" || !session?.user) return;
+
+    const load = async () => {
+      const [profileRes, addressesRes] = await Promise.all([
+        fetch("/api/account/profile"),
+        fetch("/api/account/addresses"),
+      ]);
+      const profile = profileRes.ok ? await profileRes.json() : null;
+      const addresses = addressesRes.ok ? await addressesRes.json() : [];
+      const defaultAddr =
+        addresses.find((a: { isDefault: boolean }) => a.isDefault) ?? addresses[0];
+
       reset({
         email: session.user.email ?? "",
-        firstName: session.user.name?.split(" ")[0] ?? "",
-        lastName: session.user.name?.split(" ").slice(1).join(" ") ?? "",
-        phone: "",
-        address: "",
-        city: "",
-        state: "",
-        postalCode: "",
+        firstName: profile?.firstName ?? session.user.name?.split(" ")[0] ?? "",
+        lastName:
+          profile?.lastName ?? session.user.name?.split(" ").slice(1).join(" ") ?? "",
+        phone: defaultAddr?.phone ?? profile?.phone ?? "",
+        address: defaultAddr?.line1 ?? "",
+        city: defaultAddr?.city ?? "",
+        state: defaultAddr?.state ?? "",
+        postalCode: defaultAddr?.postalCode ?? "",
       });
-    }
-  }, [session, reset]);
+    };
+
+    load().catch(() => undefined);
+  }, [session, status, reset]);
 
   const onSubmit = async (data: FormData) => {
     setError("");
@@ -314,6 +329,16 @@ export function CheckoutForm({ razorpayEnabled }: CheckoutFormProps) {
               title="Cash on delivery"
               detail="Pay in cash when your order is delivered"
             />
+            {!razorpayEnabled && (
+              <p className="text-xs text-muted-foreground leading-relaxed rounded-sm border border-dashed border-border/80 bg-secondary/30 px-3 py-2.5">
+                Pay online (UPI, cards, netbanking) is hidden because Razorpay keys are not
+                set on this deployment. Add{" "}
+                <code className="text-[10px]">RAZORPAY_KEY_ID</code>,{" "}
+                <code className="text-[10px]">RAZORPAY_KEY_SECRET</code>, and{" "}
+                <code className="text-[10px]">NEXT_PUBLIC_RAZORPAY_KEY_ID</code> in Vercel
+                env, then redeploy.
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -346,6 +371,12 @@ export function CheckoutForm({ razorpayEnabled }: CheckoutFormProps) {
             <span className="text-muted-foreground">Shipping</span>
             <span>{shipping === 0 ? "Free" : formatPrice(shipping)}</span>
           </div>
+          {siteConfig.pricesIncludeGst && (
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>{siteConfig.gstLabel}</span>
+              <span>—</span>
+            </div>
+          )}
           <div className="flex justify-between font-semibold text-base pt-2">
             <span className="inline-flex items-center gap-1">
               <IndianRupee className="h-4 w-4" />

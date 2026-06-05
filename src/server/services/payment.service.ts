@@ -10,9 +10,29 @@ import { AppError } from "@/server/errors/app-error";
 import { getRazorpayClient, getRazorpayKeyId } from "@/lib/razorpay";
 import { isRazorpayConfigured } from "@/lib/payments";
 import { orderService } from "@/server/services/order.service";
+import { sendOrderConfirmationEmail } from "@/server/services/email.service";
 
 function toPaymentMetadata(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
+
+async function notifyOrderPlaced(orderId: string, paymentLabel: string) {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { items: true },
+  });
+  if (!order) return;
+  await sendOrderConfirmationEmail({
+    orderNumber: order.orderNumber,
+    email: order.email,
+    total: Number(order.total),
+    paymentLabel,
+    items: order.items.map((i) => ({
+      productTitle: i.productTitle,
+      quantity: i.quantity,
+      unitPrice: Number(i.unitPrice),
+    })),
+  });
 }
 
 export class PaymentService {
@@ -122,7 +142,9 @@ export class PaymentService {
       });
     }
 
-    return orderService.updateStatus(order.id, OrderStatus.PAID);
+    const updated = await orderService.updateStatus(order.id, OrderStatus.PAID);
+    await notifyOrderPlaced(order.id, "Paid online (Razorpay)");
+    return updated;
   }
 
   async confirmCod(orderId: string, userId: string) {
@@ -147,6 +169,7 @@ export class PaymentService {
       });
     }
 
+    await notifyOrderPlaced(order.id, "Cash on delivery");
     return order;
   }
 
@@ -178,6 +201,7 @@ export class PaymentService {
         },
       });
       await orderService.updateStatus(payment.orderId, OrderStatus.PAID);
+      await notifyOrderPlaced(payment.orderId, "Paid online (Razorpay)");
     }
   }
 }

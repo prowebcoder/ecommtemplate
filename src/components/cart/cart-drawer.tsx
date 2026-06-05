@@ -19,6 +19,7 @@ import { useCartStore } from "@/stores/cart-store";
 import { formatPrice } from "@/lib/utils";
 import { FREE_SHIPPING_THRESHOLD } from "@/lib/constants";
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 
 export function CartDrawer() {
   const {
@@ -29,24 +30,54 @@ export function CartDrawer() {
     getShipping,
     getTotal,
     couponCode,
-    applyCoupon,
+    setCoupon,
     removeCoupon,
     couponDiscount,
   } = useCartStore();
+  const { status } = useSession();
   const [couponInput, setCouponInput] = useState("");
   const [couponError, setCouponError] = useState("");
+  const [couponLoading, setCouponLoading] = useState(false);
   const subtotal = getSubtotal();
   const shipping = getShipping();
   const total = getTotal();
   const discount = subtotal * couponDiscount;
 
-  const handleCoupon = () => {
-    const ok = applyCoupon(couponInput);
-    if (ok) {
-      setCouponError("");
+  const handleCoupon = async () => {
+    setCouponError("");
+    setCouponLoading(true);
+    try {
+      const res = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: couponInput, subtotal }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setCouponError(err.message ?? "Invalid coupon code");
+        return;
+      }
+      const data = await res.json();
+      setCoupon(data.code, data.discountRate);
+      if (status === "authenticated") {
+        await fetch("/api/cart/coupon", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: data.code }),
+        });
+      }
       setCouponInput("");
-    } else {
-      setCouponError("Invalid coupon code");
+    } catch {
+      setCouponError("Could not apply coupon");
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const handleRemoveCoupon = async () => {
+    removeCoupon();
+    if (status === "authenticated") {
+      await fetch("/api/cart/coupon", { method: "DELETE" }).catch(() => undefined);
     }
   };
 
@@ -102,12 +133,12 @@ export function CartDrawer() {
                   disabled={!!couponCode}
                 />
                 {couponCode ? (
-                  <Button variant="outline" onClick={removeCoupon}>
+                  <Button variant="outline" onClick={handleRemoveCoupon}>
                     Remove
                   </Button>
                 ) : (
-                  <Button variant="outline" onClick={handleCoupon}>
-                    Apply
+                  <Button variant="outline" onClick={handleCoupon} disabled={couponLoading}>
+                    {couponLoading ? "..." : "Apply"}
                   </Button>
                 )}
               </div>

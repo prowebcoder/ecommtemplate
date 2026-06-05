@@ -5,6 +5,7 @@ import { cartService } from "@/server/services/cart.service";
 import { couponService } from "@/server/services/coupon.service";
 import { siteConfig } from "@/config/site";
 import { generateOrderNumber } from "@/utils/slug";
+import { accountService } from "@/server/services/account.service";
 
 export type CreateOrderInput = {
   email: string;
@@ -37,9 +38,11 @@ export class OrderService {
         ? 0
         : siteConfig.defaultShipping;
     const subtotal = cart.subtotal;
-    const total = subtotal - discountAmount + shippingAmount;
+    const taxable = subtotal - discountAmount;
+    const taxAmount = siteConfig.pricesIncludeGst ? 0 : Math.round(taxable * 0.05 * 100) / 100;
+    const total = taxable + taxAmount + shippingAmount;
 
-    return prisma.$transaction(async (tx) => {
+    const order = await prisma.$transaction(async (tx) => {
       for (const item of cart.items) {
         await tx.inventory.update({
           where: { variantId: item.variantId },
@@ -56,6 +59,7 @@ export class OrderService {
           subtotal,
           discountAmount,
           shippingAmount,
+          taxAmount,
           total,
           couponId,
           items: {
@@ -107,6 +111,20 @@ export class OrderService {
       await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
       return order;
     });
+
+    if (userId) {
+      await accountService.saveCheckoutAddress(userId, input).catch(() => undefined);
+    }
+
+    return order;
+  }
+
+  async cancelByCustomer(orderId: string, userId: string) {
+    const order = await this.findById(orderId, userId);
+    if (order.status !== OrderStatus.PENDING) {
+      throw new AppError("Only pending orders can be cancelled", 400);
+    }
+    return this.updateStatus(orderId, OrderStatus.CANCELLED);
   }
 
   async findUserOrders(userId: string) {

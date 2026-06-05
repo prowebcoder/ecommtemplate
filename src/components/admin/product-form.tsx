@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ImageUploader } from "@/components/admin/image-uploader";
 
 export type ProductFormInitial = {
   id: string;
@@ -51,6 +52,9 @@ export function ProductForm({ mode, categories, initial }: ProductFormProps) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [imageUrls, setImageUrls] = useState(
+    initial?.images.map((i) => i.url).join("\n") ?? ""
+  );
   const isEdit = !!initial;
   const v0 = initial?.variants[0];
 
@@ -60,7 +64,7 @@ export function ProductForm({ mode, categories, initial }: ProductFormProps) {
     setLoading(true);
     const fd = new FormData(e.currentTarget);
 
-    const imageUrls = String(fd.get("imageUrls") ?? "")
+    const parsedImageUrls = imageUrls
       .split("\n")
       .map((s) => s.trim())
       .filter(Boolean);
@@ -76,7 +80,7 @@ export function ProductForm({ mode, categories, initial }: ProductFormProps) {
       shippingInfo: String(fd.get("shippingInfo") || "") || undefined,
       returnPolicy: String(fd.get("returnPolicy") || "") || undefined,
       sizeChart: String(fd.get("sizeChart") || "") || undefined,
-      imageUrls,
+      imageUrls: parsedImageUrls,
       variants: [
         {
           sku: String(fd.get("sku")),
@@ -276,12 +280,18 @@ export function ProductForm({ mode, categories, initial }: ProductFormProps) {
       </div>
       <div>
         <Label htmlFor="imageUrls">Image URLs (one per line)</Label>
+        <ImageUploader
+          onUploaded={(url) =>
+            setImageUrls((prev) => (prev ? `${prev}\n${url}` : url))
+          }
+        />
         <Textarea
           id="imageUrls"
           name="imageUrls"
           required
-          defaultValue={initial?.images.map((i) => i.url).join("\n")}
-          className="mt-1 font-mono text-xs min-h-[80px]"
+          value={imageUrls}
+          onChange={(e) => setImageUrls(e.target.value)}
+          className="mt-2 font-mono text-xs min-h-[80px]"
         />
       </div>
       <div className="border-t pt-4">

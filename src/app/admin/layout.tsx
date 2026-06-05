@@ -2,6 +2,7 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { requireSuperAdmin } from "@/lib/auth-utils";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
+import { AdminMobileNav } from "@/components/admin/admin-mobile-nav";
 import { PanelSignOutButton } from "@/components/auth/panel-sign-out-button";
 import { siteConfig } from "@/config/site";
 
@@ -32,12 +33,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </div>
         </div>
       </header>
-      <div className="container mx-auto flex gap-8 px-4 py-8">
+      <div className="container mx-auto flex gap-8 px-4 py-8 pb-24 md:pb-8">
         <aside className="hidden w-52 shrink-0 md:block">
           <AdminSidebar />
         </aside>
         <main className="flex-1 min-w-0">{children}</main>
       </div>
+      <AdminMobileNav />
     </div>
   );
 }
