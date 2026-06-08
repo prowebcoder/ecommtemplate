@@ -46,7 +46,8 @@ export default async function HomePage() {
               title={row.title}
               subtitle={row.subtitle}
               href={row.href}
-              fetcher={row.fetcher}
+              sourceType={row.sourceType}
+              sourceHandle={row.sourceHandle}
               muted={row.muted}
             />
           </Suspense>

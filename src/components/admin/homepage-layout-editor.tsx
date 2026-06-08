@@ -9,9 +9,25 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ImageUploader } from "@/components/admin/image-uploader";
 import { LinkListEditor } from "@/components/admin/link-list-editor";
-import type { HomepageConfig } from "@/types/store-theme";
+import type { HomepageConfig, HomepageProductRow } from "@/types/store-theme";
 
-export function HomepageLayoutEditor({ initial }: { initial: HomepageConfig }) {
+type PickerOption = { handle: string; title: string };
+
+function defaultRowHref(sourceType: HomepageProductRow["sourceType"], handle: string) {
+  return sourceType === "collection"
+    ? `/collections/${handle}`
+    : `/search?category=${handle}`;
+}
+
+export function HomepageLayoutEditor({
+  initial,
+  collections,
+  categories,
+}: {
+  initial: HomepageConfig;
+  collections: PickerOption[];
+  categories: PickerOption[];
+}) {
   const router = useRouter();
   const [data, setData] = useState(initial);
   const [loading, setLoading] = useState(false);
@@ -340,12 +356,18 @@ export function HomepageLayoutEditor({ initial }: { initial: HomepageConfig }) {
 
       <section className="space-y-4 border-t pt-6">
         <div className="flex items-center justify-between">
-          <h3 className="text-xs font-semibold uppercase tracking-widest">Product rows</h3>
+          <div>
+            <h3 className="text-xs font-semibold uppercase tracking-widest">Product rows</h3>
+            <p className="text-xs text-muted-foreground mt-1">
+              Products are loaded only from the selected collection or category.
+            </p>
+          </div>
           <Button
             type="button"
             variant="outline"
             size="sm"
-            onClick={() =>
+            onClick={() => {
+              const handle = collections[0]?.handle ?? "new-arrivals";
               setData({
                 ...data,
                 productRows: [
@@ -356,13 +378,14 @@ export function HomepageLayoutEditor({ initial }: { initial: HomepageConfig }) {
                     eyebrow: "Featured",
                     title: "Products",
                     subtitle: "",
-                    href: "/collections/new-arrivals",
-                    fetcher: "new",
+                    href: defaultRowHref("collection", handle),
+                    sourceType: "collection",
+                    sourceHandle: handle,
                     muted: false,
                   },
                 ],
-              })
-            }
+              });
+            }}
           >
             Add row
           </Button>
@@ -409,7 +432,55 @@ export function HomepageLayoutEditor({ initial }: { initial: HomepageConfig }) {
                   setData({ ...data, productRows });
                 }}
               />
+              <div>
+                <Label className="text-xs">Show products from</Label>
+                <div className="mt-1 grid gap-2 sm:grid-cols-2">
+                  <select
+                    className="h-9 rounded-sm border px-2 text-sm w-full"
+                    value={row.sourceType}
+                    onChange={(e) => {
+                      const sourceType = e.target.value as HomepageProductRow["sourceType"];
+                      const options = sourceType === "collection" ? collections : categories;
+                      const handle = options[0]?.handle ?? row.sourceHandle;
+                      const productRows = [...data.productRows];
+                      productRows[i] = {
+                        ...row,
+                        sourceType,
+                        sourceHandle: handle,
+                        href: defaultRowHref(sourceType, handle),
+                      };
+                      setData({ ...data, productRows });
+                    }}
+                  >
+                    <option value="collection">Collection</option>
+                    <option value="category">Category</option>
+                  </select>
+                  <select
+                    className="h-9 rounded-sm border px-2 text-sm w-full"
+                    value={row.sourceHandle}
+                    onChange={(e) => {
+                      const handle = e.target.value;
+                      const productRows = [...data.productRows];
+                      productRows[i] = {
+                        ...row,
+                        sourceHandle: handle,
+                        href: defaultRowHref(row.sourceType, handle),
+                      };
+                      setData({ ...data, productRows });
+                    }}
+                  >
+                    {(row.sourceType === "collection" ? collections : categories).map(
+                      (opt) => (
+                        <option key={opt.handle} value={opt.handle}>
+                          {opt.title}
+                        </option>
+                      )
+                    )}
+                  </select>
+                </div>
+              </div>
               <Input
+                className="sm:col-span-2"
                 placeholder="View all link"
                 value={row.href}
                 onChange={(e) => {
@@ -418,21 +489,6 @@ export function HomepageLayoutEditor({ initial }: { initial: HomepageConfig }) {
                   setData({ ...data, productRows });
                 }}
               />
-              <select
-                className="h-9 rounded-sm border px-2 text-sm"
-                value={row.fetcher}
-                onChange={(e) => {
-                  const productRows = [...data.productRows];
-                  productRows[i] = {
-                    ...row,
-                    fetcher: e.target.value as "new" | "best",
-                  };
-                  setData({ ...data, productRows });
-                }}
-              >
-                <option value="new">New arrivals products</option>
-                <option value="best">Best sellers products</option>
-              </select>
             </div>
             <label className="flex items-center gap-2 text-sm">
               <Checkbox

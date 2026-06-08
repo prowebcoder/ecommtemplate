@@ -15,14 +15,20 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
+type PickerOption = { handle: string; title: string };
+
 export function StoreContentTabs({
   homepage,
   header,
   footer,
+  collections,
+  categories,
 }: {
   homepage: HomepageConfig;
   header: HeaderConfig;
   footer: FooterConfig;
+  collections: PickerOption[];
+  categories: PickerOption[];
 }) {
   const [tab, setTab] = useState<TabId>("homepage");
 
@@ -45,7 +51,13 @@ export function StoreContentTabs({
           </button>
         ))}
       </div>
-      {tab === "homepage" && <HomepageLayoutEditor initial={homepage} />}
+      {tab === "homepage" && (
+        <HomepageLayoutEditor
+          initial={homepage}
+          collections={collections}
+          categories={categories}
+        />
+      )}
       {tab === "header" && <HeaderEditor initial={header} />}
       {tab === "footer" && <FooterEditor initial={footer} />}
     </div>

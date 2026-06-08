@@ -1,6 +1,7 @@
 import { heroImage } from "@/lib/catalog-images";
 import { DEFAULT_SIZE_CHART } from "@/lib/size-chart-defaults";
 import { prisma } from "@/server/db/prisma";
+import { productRepository } from "@/server/repositories/product.repository";
 import { mapDbProductToCard } from "@/server/mappers/product.mapper";
 import type { Product } from "@/types/product";
 
@@ -122,6 +123,41 @@ export class StorefrontService {
         variants: p.variants,
       })
     );
+  }
+
+  private mapProductRows(
+    rows: Awaited<ReturnType<typeof productRepository.findMany>>["items"]
+  ): Product[] {
+    return rows.map((p) =>
+      mapDbProductToCard({
+        ...p,
+        description: p.description,
+        materials: p.materials,
+        careInstructions: p.careInstructions,
+        shippingInfo: p.shippingInfo,
+        returnPolicy: p.returnPolicy,
+        createdAt: p.createdAt,
+        variants: p.variants,
+      })
+    );
+  }
+
+  async getProductsByCollection(handle: string, limit = 8): Promise<Product[]> {
+    const { items } = await productRepository.findMany({
+      collectionHandle: handle,
+      limit,
+      sort: "newest",
+    });
+    return this.mapProductRows(items);
+  }
+
+  async getProductsByCategory(slug: string, limit = 8): Promise<Product[]> {
+    const { items } = await productRepository.findMany({
+      categorySlugs: [slug],
+      limit,
+      sort: "newest",
+    });
+    return this.mapProductRows(items);
   }
 
   async getProductsByIds(ids: string[]): Promise<Product[]> {

@@ -3,28 +3,28 @@ import { ProductGrid } from "@/components/product/product-grid";
 import { ScrollReveal } from "@/components/shared/scroll-reveal";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { cn } from "@/lib/utils";
+import type { HomepageProductRow } from "@/types/store-theme";
 
-type HomeProductRowProps = {
-  eyebrow: string;
-  title: string;
-  subtitle?: string;
-  href: string;
-  fetcher: "new" | "best";
-  muted?: boolean;
-};
+type HomeProductRowProps = Pick<
+  HomepageProductRow,
+  "eyebrow" | "title" | "subtitle" | "href" | "sourceType" | "sourceHandle" | "muted"
+>;
 
 export async function HomeProductRow({
   eyebrow,
   title,
   subtitle,
   href,
-  fetcher,
+  sourceType,
+  sourceHandle,
   muted,
 }: HomeProductRowProps) {
+  if (!sourceHandle) return null;
+
   const products =
-    fetcher === "new"
-      ? await storefrontService.getNewArrivals(8)
-      : await storefrontService.getBestSellers(8);
+    sourceType === "category"
+      ? await storefrontService.getProductsByCategory(sourceHandle, 8)
+      : await storefrontService.getProductsByCollection(sourceHandle, 8);
 
   if (!products.length) return null;
 

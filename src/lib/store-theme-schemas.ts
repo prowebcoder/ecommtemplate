@@ -130,7 +130,8 @@ export const homepageConfigSchema = z.object({
       title: z.string(),
       subtitle: z.string(),
       href: z.string(),
-      fetcher: z.enum(["new", "best"]),
+      sourceType: z.enum(["collection", "category"]),
+      sourceHandle: z.string().min(1),
       muted: z.boolean(),
     })
   ),

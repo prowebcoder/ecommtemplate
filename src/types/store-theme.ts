@@ -90,7 +90,9 @@ export type HomepageProductRow = {
   title: string;
   subtitle: string;
   href: string;
-  fetcher: "new" | "best";
+  /** Products are loaded only from this collection or category */
+  sourceType: "collection" | "category";
+  sourceHandle: string;
   muted: boolean;
 };
 

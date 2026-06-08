@@ -80,6 +80,21 @@ export class StoreThemeService {
       ) as HomepageConfig["hero"];
     }
 
+    saved.productRows = saved.productRows.map((row) => {
+      const legacy = row as HomepageConfig["productRows"][number] & {
+        fetcher?: "new" | "best";
+      };
+      if (!legacy.sourceHandle && legacy.fetcher) {
+        return {
+          ...legacy,
+          sourceType: "collection" as const,
+          sourceHandle:
+            legacy.fetcher === "best" ? "best-sellers" : "new-arrivals",
+        };
+      }
+      return row;
+    });
+
     return saved;
   }
 

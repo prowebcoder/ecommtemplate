@@ -10,6 +10,7 @@ import { useEffect } from "react";
 export function SearchResults() {
   const searchParams = useSearchParams();
   const query = searchParams.get("q") ?? "";
+  const category = searchParams.get("category") ?? "";
   const addToHistory = useSearchStore((s) => s.addToHistory);
 
   useEffect(() => {
@@ -17,12 +18,17 @@ export function SearchResults() {
   }, [query, addToHistory]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["search-results", query],
-    queryFn: () => fetchProducts({ search: query, limit: "24" }),
-    enabled: query.length >= 1,
+    queryKey: ["search-results", query, category],
+    queryFn: () =>
+      fetchProducts({
+        ...(query ? { search: query } : {}),
+        ...(category ? { category } : {}),
+        limit: "24",
+      }),
+    enabled: query.length >= 1 || category.length >= 1,
   });
 
-  if (!query) {
+  if (!query && !category) {
     return (
       <p className="text-muted-foreground">Enter a search term to find products.</p>
     );
@@ -37,7 +43,8 @@ export function SearchResults() {
   return (
     <div>
       <p className="text-sm text-muted-foreground mb-6">
-        {data?.total ?? 0} results for &quot;{query}&quot;
+        {data?.total ?? 0} results
+        {query ? ` for "${query}"` : category ? ` in ${category}` : ""}
       </p>
       {products.length ? (
         <ProductGrid products={products} />

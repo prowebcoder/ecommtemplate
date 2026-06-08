@@ -4,12 +4,15 @@ import { StoreContentTabs } from "@/components/admin/store-content-tabs";
 import { SizeChartEditor } from "@/components/admin/size-chart-editor";
 
 export default async function AdminContentPage() {
-  const [homepage, header, footer, sizeChart] = await Promise.all([
-    storeThemeService.getHomepage(),
-    storeThemeService.getHeader(),
-    storeThemeService.getFooter(),
-    storefrontService.getSizeChart(),
-  ]);
+  const [homepage, header, footer, sizeChart, collections, categories] =
+    await Promise.all([
+      storeThemeService.getHomepage(),
+      storeThemeService.getHeader(),
+      storeThemeService.getFooter(),
+      storefrontService.getSizeChart(),
+      storefrontService.getCollections(),
+      storefrontService.getCategories(),
+    ]);
 
   return (
     <div className="space-y-12">
@@ -21,7 +24,13 @@ export default async function AdminContentPage() {
           <span className="font-medium">Pages</span>.
         </p>
       </div>
-      <StoreContentTabs homepage={homepage} header={header} footer={footer} />
+      <StoreContentTabs
+        homepage={homepage}
+        header={header}
+        footer={footer}
+        collections={collections.map((c) => ({ handle: c.handle, title: c.title }))}
+        categories={categories.map((c) => ({ handle: c.slug, title: c.name }))}
+      />
       <SizeChartEditor initial={sizeChart} />
     </div>
   );
