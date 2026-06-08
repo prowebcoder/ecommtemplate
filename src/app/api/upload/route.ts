@@ -8,7 +8,7 @@ export async function POST(req: Request) {
     await requireSuperAdminOrVendor();
     if (!isBlobStorageConfigured()) {
       throw new AppError(
-        "Image upload is not configured. Set BLOB_READ_WRITE_TOKEN (run vercel env pull for local dev).",
+        "Image upload is not configured. In Vercel: Storage → connect your Blob store to this project (adds BLOB_STORE_ID). For local dev: run vercel env pull.",
         503
       );
     }
