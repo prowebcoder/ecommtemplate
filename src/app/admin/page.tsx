@@ -101,7 +101,7 @@ export default async function AdminDashboardPage() {
           <QuickLink href="/admin/products/new" label="Add product" />
           <QuickLink href="/admin/coupons" label="Manage coupons" />
           <QuickLink href="/admin/vendors" label="Manage vendors" />
-          <QuickLink href="/admin/content" label="Homepage & size chart" />
+          <QuickLink href="/admin/content" label="Storefront & size chart" />
           <QuickLink href="/admin/orders" label="All orders" />
         </div>
       </div>

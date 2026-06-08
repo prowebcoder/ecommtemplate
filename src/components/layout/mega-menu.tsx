@@ -3,16 +3,15 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import type { MegaMenuItem } from "@/data/navigation";
-import { MEGA_MENU } from "@/data/navigation";
+import type { MegaMenuItem } from "@/types/store-theme";
 
 type MegaMenuProps = {
   activeMenu: string | null;
   onClose: () => void;
-  items?: MegaMenuItem[];
+  items: MegaMenuItem[];
 };
 
-export function MegaMenu({ activeMenu, onClose, items = MEGA_MENU }: MegaMenuProps) {
+export function MegaMenu({ activeMenu, onClose, items }: MegaMenuProps) {
   const menu = items.find((m) => m.label === activeMenu);
 
   return (

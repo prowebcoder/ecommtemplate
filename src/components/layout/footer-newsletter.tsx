@@ -3,18 +3,23 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import type { FooterConfig } from "@/types/store-theme";
 
-export function FooterNewsletter() {
+type FooterNewsletterProps = {
+  config: FooterConfig["newsletter"];
+};
+
+export function FooterNewsletter({ config }: FooterNewsletterProps) {
   const [email, setEmail] = useState("");
   const [done, setDone] = useState(false);
+
+  if (!config.enabled) return null;
 
   return (
     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <div>
-        <p className="text-sm font-medium">Stay in the loop</p>
-        <p className="text-xs text-muted-foreground mt-1">
-          New drops and exclusive offers — no spam.
-        </p>
+        <p className="text-sm font-medium">{config.title}</p>
+        <p className="text-xs text-muted-foreground mt-1">{config.subtitle}</p>
       </div>
       {done ? (
         <p className="text-sm text-muted-foreground">Thanks for subscribing.</p>
@@ -35,7 +40,7 @@ export function FooterNewsletter() {
             required
           />
           <Button type="submit" variant="default" className="shrink-0">
-            Join
+            {config.buttonLabel}
           </Button>
         </form>
       )}

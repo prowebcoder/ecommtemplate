@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { storefrontService } from "@/server/services/storefront.service";
+import { storeThemeService } from "@/server/services/store-theme.service";
 import { buildMegaMenuFromCollections } from "@/lib/build-navigation";
 import { SiteHeader } from "./site-header";
 import { SiteFooter } from "./site-footer";
@@ -12,28 +13,28 @@ export async function StoreShell({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  const [collections, footerPages] = await Promise.all([
+  const [collections, footerPages, header, footer] = await Promise.all([
     storefrontService.getCollections(),
     storefrontService.getFooterPages(),
+    storeThemeService.getHeader(),
+    storeThemeService.getFooter(),
   ]);
 
-  const megaMenu = buildMegaMenuFromCollections(collections);
-  const shopLinks = collections.map((c) => ({
-    label: c.title,
-    href: `/collections/${c.handle}`,
+  const megaMenu =
+    header.navigationMode === "collections" || !header.navigation.length
+      ? buildMegaMenuFromCollections(collections)
+      : header.navigation;
+
+  const cmsLinks = footerPages.map((p) => ({
+    label: p.title,
+    href: `/pages/${p.handle}`,
   }));
 
   return (
     <>
-      <SiteHeader megaMenu={megaMenu} />
+      <SiteHeader header={header} megaMenu={megaMenu} />
       <main className="flex-1">{children}</main>
-      <SiteFooter
-        shopLinks={shopLinks}
-        cmsLinks={footerPages.map((p) => ({
-          label: p.title,
-          href: `/pages/${p.handle}`,
-        }))}
-      />
+      <SiteFooter footer={footer} logoText={header.logo.text} cmsLinks={cmsLinks} />
     </>
   );
 }

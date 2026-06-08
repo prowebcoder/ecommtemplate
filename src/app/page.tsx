@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { heroImage } from "@/lib/catalog-images";
-import { storefrontService } from "@/server/services/storefront.service";
+import { storeThemeService } from "@/server/services/store-theme.service";
 import { HeroBanner } from "@/components/home/hero-banner";
 import { FeaturedCategories } from "@/components/home/featured-categories";
 import { HomeProductRow } from "@/components/home/home-product-row";
@@ -19,39 +19,38 @@ function RowSkeleton() {
 }
 
 export default async function HomePage() {
-  const hero = await storefrontService.getHomeHero();
+  const homepage = await storeThemeService.getHomepage();
+  const { hero, quickLinks, featuredSection, productRows } = homepage;
 
   return (
     <div className="flex flex-col">
       <HeroBanner
-        title={hero.title ?? "Elevate Your Everyday"}
+        title={hero.title}
         subtitle={hero.subtitle}
         ctaLabel={hero.ctaLabel}
         ctaHref={hero.ctaHref}
-        imageUrl={hero.imageUrl ?? heroImage()}
+        secondaryCtaLabel={hero.secondaryCtaLabel}
+        secondaryCtaHref={hero.secondaryCtaHref}
+        imageUrl={hero.imageUrl || heroImage()}
+        quickLinks={quickLinks}
       />
       <Suspense fallback={<RowSkeleton />}>
-        <FeaturedCategories />
+        <FeaturedCategories section={featuredSection} />
       </Suspense>
-      <Suspense fallback={<RowSkeleton />}>
-        <HomeProductRow
-          eyebrow="Just in"
-          title="New Arrivals"
-          subtitle="Latest pieces from our catalog"
-          href="/collections/new-arrivals"
-          fetcher="new"
-        />
-      </Suspense>
-      <Suspense fallback={<RowSkeleton />}>
-        <HomeProductRow
-          eyebrow="Most loved"
-          title="Best Sellers"
-          subtitle="Top picks from the community"
-          href="/collections/best-sellers"
-          fetcher="best"
-          muted
-        />
-      </Suspense>
+      {productRows
+        .filter((row) => row.enabled)
+        .map((row) => (
+          <Suspense key={row.id} fallback={<RowSkeleton />}>
+            <HomeProductRow
+              eyebrow={row.eyebrow}
+              title={row.title}
+              subtitle={row.subtitle}
+              href={row.href}
+              fetcher={row.fetcher}
+              muted={row.muted}
+            />
+          </Suspense>
+        ))}
     </div>
   );
 }

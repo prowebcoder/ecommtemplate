@@ -5,28 +5,28 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import type { ThemeNavLink } from "@/types/store-theme";
 
 type HeroBannerProps = {
   title: string;
   subtitle?: string;
   ctaLabel?: string;
   ctaHref?: string;
+  secondaryCtaLabel?: string;
+  secondaryCtaHref?: string;
   imageUrl: string;
+  quickLinks?: ThemeNavLink[];
 };
-
-const QUICK_LINKS = [
-  { label: "Women", href: "/collections/women" },
-  { label: "Men", href: "/collections/men" },
-  { label: "New in", href: "/collections/new-arrivals" },
-  { label: "Sale", href: "/collections/sale" },
-];
 
 export function HeroBanner({
   title,
   subtitle,
   ctaLabel = "Shop New Arrivals",
   ctaHref = "/collections/new-arrivals",
+  secondaryCtaLabel,
+  secondaryCtaHref,
   imageUrl,
+  quickLinks = [],
 }: HeroBannerProps) {
   return (
     <section className="relative w-full overflow-hidden bg-foreground">
@@ -46,60 +46,56 @@ export function HeroBanner({
             <motion.div
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.7, ease: "easeOut" }}
               className="max-w-2xl"
             >
-              <p className="text-[11px] font-medium uppercase tracking-[0.35em] text-white/70 mb-4">
-                Premium essentials
-              </p>
-              <h1 className="font-serif text-4xl leading-[1.05] text-white md:text-6xl lg:text-7xl text-balance">
+              <h1 className="font-serif text-4xl md:text-6xl lg:text-7xl text-white tracking-tight">
                 {title}
               </h1>
               {subtitle && (
-                <p className="mt-4 text-sm md:text-base text-white/75 max-w-md leading-relaxed">
+                <p className="mt-4 text-base md:text-lg text-white/80 max-w-lg leading-relaxed">
                   {subtitle}
                 </p>
               )}
-              <div className="mt-8 flex flex-wrap items-center gap-3">
-                <Button
-                  variant="luxury"
-                  size="lg"
-                  className="bg-white text-foreground hover:bg-white/90 gap-2"
-                  asChild
-                >
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Button variant="luxury" size="lg" asChild>
                   <Link href={ctaHref}>
                     {ctaLabel}
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="border-white/40 bg-transparent text-white hover:bg-white/10 hover:text-white"
-                  asChild
-                >
-                  <Link href="/collections/men">Shop Men</Link>
-                </Button>
+                {secondaryCtaLabel && secondaryCtaHref && (
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="border-white/40 bg-transparent text-white hover:bg-white/10 hover:text-white"
+                    asChild
+                  >
+                    <Link href={secondaryCtaHref}>{secondaryCtaLabel}</Link>
+                  </Button>
+                )}
               </div>
             </motion.div>
 
-            <motion.nav
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5, duration: 0.6 }}
-              className="mt-10 flex flex-wrap gap-x-6 gap-y-2 border-t border-white/15 pt-6"
-              aria-label="Quick shop"
-            >
-              {QUICK_LINKS.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="text-xs font-medium uppercase tracking-[0.2em] text-white/80 hover:text-white transition-colors"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </motion.nav>
+            {quickLinks.length > 0 && (
+              <motion.nav
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5, duration: 0.6 }}
+                className="mt-10 flex flex-wrap gap-x-6 gap-y-2 border-t border-white/15 pt-6"
+                aria-label="Quick shop"
+              >
+                {quickLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="text-xs font-medium uppercase tracking-[0.2em] text-white/80 hover:text-white transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </motion.nav>
+            )}
           </div>
         </div>
       </div>

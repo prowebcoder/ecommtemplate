@@ -220,18 +220,32 @@ async function main() {
     },
   });
 
-  const heroValue = {
-    title: "Elevate Your Everyday",
-    subtitle: "Premium fashion essentials crafted for comfort and style.",
-    ctaLabel: "Shop New Arrivals",
-    ctaHref: "/collections/new-arrivals",
-    imageUrl: heroImage(),
-  };
+  const { DEFAULT_HEADER, DEFAULT_FOOTER, DEFAULT_HOMEPAGE } = await import(
+    "../src/lib/store-theme-defaults"
+  );
+
+  await prisma.siteSetting.upsert({
+    where: { key: "store.header" },
+    update: { value: DEFAULT_HEADER },
+    create: { key: "store.header", value: DEFAULT_HEADER },
+  });
+
+  await prisma.siteSetting.upsert({
+    where: { key: "store.footer" },
+    update: { value: DEFAULT_FOOTER },
+    create: { key: "store.footer", value: DEFAULT_FOOTER },
+  });
+
+  await prisma.siteSetting.upsert({
+    where: { key: "store.homepage" },
+    update: { value: DEFAULT_HOMEPAGE },
+    create: { key: "store.homepage", value: DEFAULT_HOMEPAGE },
+  });
 
   await prisma.siteSetting.upsert({
     where: { key: "homepage.hero" },
-    update: { value: heroValue },
-    create: { key: "homepage.hero", value: heroValue },
+    update: { value: DEFAULT_HOMEPAGE.hero },
+    create: { key: "homepage.hero", value: DEFAULT_HOMEPAGE.hero },
   });
 
   await prisma.siteSetting.upsert({

@@ -1,4 +1,4 @@
-import type { MegaMenuItem } from "@/data/navigation";
+import type { MegaMenuItem } from "@/types/store-theme";
 
 export function buildMegaMenuFromCollections(
   collections: { title: string; handle: string; image: string | null; description: string | null }[]

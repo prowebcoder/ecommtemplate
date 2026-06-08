@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
@@ -13,18 +14,17 @@ import { useCartStore } from "@/stores/cart-store";
 import { useWishlistStore } from "@/stores/wishlist-store";
 import { useSearchStore } from "@/stores/search-store";
 import { useSession } from "next-auth/react";
-import type { MegaMenuItem } from "@/data/navigation";
-import { MEGA_MENU } from "@/data/navigation";
-import { SITE_NAME } from "@/lib/constants";
+import type { HeaderConfig, MegaMenuItem } from "@/types/store-theme";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { cn } from "@/lib/utils";
 
 type SiteHeaderProps = {
-  megaMenu?: MegaMenuItem[];
+  header: HeaderConfig;
+  megaMenu: MegaMenuItem[];
 };
 
-export function SiteHeader({ megaMenu = MEGA_MENU }: SiteHeaderProps) {
-  const menuItems = megaMenu.length ? megaMenu : MEGA_MENU;
+export function SiteHeader({ header, megaMenu }: SiteHeaderProps) {
+  const menuItems = megaMenu;
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -45,13 +45,15 @@ export function SiteHeader({ megaMenu = MEGA_MENU }: SiteHeaderProps) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  const showAnnouncement = header.announcement.enabled && !scrolled;
+
   return (
     <>
       <header
         className="sticky top-0 z-50 bg-background"
         style={{ "--header-height": scrolled ? "64px" : "104px" } as React.CSSProperties}
       >
-        {!scrolled && <AnnouncementBar />}
+        {showAnnouncement && <AnnouncementBar items={header.announcement.items} />}
         <div
           className={cn(
             "border-b transition-all duration-300",
@@ -69,10 +71,20 @@ export function SiteHeader({ megaMenu = MEGA_MENU }: SiteHeaderProps) {
             </button>
 
             <Link
-              href="/"
-              className="font-serif text-xl tracking-[0.2em] uppercase md:text-2xl"
+              href={header.logo.href}
+              className="font-serif text-xl tracking-[0.2em] uppercase md:text-2xl flex items-center gap-2"
             >
-              {SITE_NAME}
+              {header.logo.imageUrl ? (
+                <Image
+                  src={header.logo.imageUrl}
+                  alt={header.logo.text}
+                  width={120}
+                  height={32}
+                  className="h-8 w-auto object-contain"
+                />
+              ) : (
+                header.logo.text
+              )}
             </Link>
 
             <nav className="hidden lg:flex items-center gap-8">
@@ -89,12 +101,18 @@ export function SiteHeader({ megaMenu = MEGA_MENU }: SiteHeaderProps) {
                   {item.label}
                 </button>
               ))}
-              <Link
-                href="/collections/sale"
-                className="text-sm font-medium text-destructive tracking-wide"
-              >
-                Sale
-              </Link>
+              {header.extraLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={cn(
+                    "text-sm font-medium tracking-wide",
+                    link.highlight ? "text-destructive" : "hover:text-gold"
+                  )}
+                >
+                  {link.label}
+                </Link>
+              ))}
             </nav>
 
             <div className="flex items-center gap-1 sm:gap-2">
@@ -143,10 +161,7 @@ export function SiteHeader({ megaMenu = MEGA_MENU }: SiteHeaderProps) {
           </div>
         </div>
 
-        <div
-          className="relative"
-          onMouseLeave={() => setActiveMenu(null)}
-        >
+        <div className="relative" onMouseLeave={() => setActiveMenu(null)}>
           <MegaMenu
             activeMenu={activeMenu}
             onClose={() => setActiveMenu(null)}
@@ -172,13 +187,19 @@ export function SiteHeader({ megaMenu = MEGA_MENU }: SiteHeaderProps) {
                   {item.label}
                 </Link>
               ))}
-              <Link
-                href="/collections/sale"
-                className="block text-sm font-medium text-destructive"
-                onClick={() => setMobileOpen(false)}
-              >
-                Sale
-              </Link>
+              {header.extraLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={cn(
+                    "block text-sm font-medium",
+                    link.highlight && "text-destructive"
+                  )}
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {link.label}
+                </Link>
+              ))}
             </div>
           </motion.nav>
         )}

@@ -1,10 +1,14 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ANNOUNCEMENTS } from "@/lib/constants";
 
-export function AnnouncementBar() {
-  const items = [...ANNOUNCEMENTS, ...ANNOUNCEMENTS];
+type AnnouncementBarProps = {
+  items: { id: string; text: string }[];
+};
+
+export function AnnouncementBar({ items }: AnnouncementBarProps) {
+  if (!items.length) return null;
+  const loop = [...items, ...items];
 
   return (
     <div className="relative overflow-hidden bg-primary text-primary-foreground">
@@ -20,7 +24,7 @@ export function AnnouncementBar() {
           },
         }}
       >
-        {items.map((item, i) => (
+        {loop.map((item, i) => (
           <span
             key={`${item.id}-${i}`}
             className="mx-8 text-xs font-medium tracking-widest uppercase"

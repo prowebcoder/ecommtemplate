@@ -211,22 +211,9 @@ export class StorefrontService {
   }
 
   async getHomeHero() {
-    const setting = await prisma.siteSetting.findUnique({
-      where: { key: "homepage.hero" },
-    });
-    return (setting?.value as {
-      title?: string;
-      subtitle?: string;
-      ctaLabel?: string;
-      ctaHref?: string;
-      imageUrl?: string;
-    }) ?? {
-      title: "Elevated Essentials",
-      subtitle: "Premium fashion for every moment",
-      ctaLabel: "Shop Now",
-      ctaHref: "/collections/new-arrivals",
-      imageUrl: heroImage(),
-    };
+    const { storeThemeService } = await import("@/server/services/store-theme.service");
+    const homepage = await storeThemeService.getHomepage();
+    return homepage.hero;
   }
 }
 

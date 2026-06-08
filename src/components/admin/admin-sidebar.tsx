@@ -17,7 +17,7 @@ const links = [
   { href: "/admin/customers", label: "Customers" },
   { href: "/admin/categories", label: "Categories" },
   { href: "/admin/pages", label: "Pages" },
-  { href: "/admin/content", label: "Homepage" },
+  { href: "/admin/content", label: "Storefront" },
 ];
 
 export function AdminSidebar() {

@@ -1,82 +1,109 @@
 import Link from "next/link";
-import { Instagram } from "lucide-react";
-import { FOOTER_LINKS } from "@/data/navigation";
-import { SITE_NAME } from "@/lib/constants";
+import { Instagram, Facebook, Twitter, Youtube, Linkedin } from "lucide-react";
 import { FooterNewsletter } from "./footer-newsletter";
 import { FooterTrustBar } from "./footer-trust-bar";
+import type { FooterConfig, ThemeNavLink } from "@/types/store-theme";
+import type { LucideIcon } from "lucide-react";
 
-type FooterLink = { label: string; href: string };
-
-type SiteFooterProps = {
-  shopLinks?: FooterLink[];
-  cmsLinks?: FooterLink[];
+const SOCIAL_ICONS: Record<string, LucideIcon> = {
+  instagram: Instagram,
+  facebook: Facebook,
+  twitter: Twitter,
+  x: Twitter,
+  youtube: Youtube,
+  linkedin: Linkedin,
 };
 
-export function SiteFooter({ shopLinks, cmsLinks = [] }: SiteFooterProps) {
-  const shop = shopLinks?.length ? shopLinks : FOOTER_LINKS.shop;
-  const company = cmsLinks.length ? cmsLinks : FOOTER_LINKS.company;
-  const helpLinks = [
-    { label: "Contact", href: "/contact" },
-    { label: "Shipping & delivery", href: "/pages/shipping" },
-    { label: "Returns & exchanges", href: "/contact" },
-    { label: "Track your order", href: "/account/orders" },
-  ];
+type SiteFooterProps = {
+  footer: FooterConfig;
+  logoText: string;
+  cmsLinks?: ThemeNavLink[];
+};
+
+export function SiteFooter({ footer, logoText, cmsLinks = [] }: SiteFooterProps) {
+  const columns = footer.columns.map((col) => {
+    if (
+      footer.mergeCmsPages &&
+      col.title === footer.cmsColumnTitle &&
+      cmsLinks.length
+    ) {
+      const existing = new Set(col.links.map((l) => l.href));
+      const merged = [
+        ...col.links,
+        ...cmsLinks.filter((l) => !existing.has(l.href)),
+      ];
+      return { ...col, links: merged };
+    }
+    return col;
+  });
 
   return (
     <footer className="mt-auto border-t bg-secondary/30">
-      <FooterTrustBar />
+      <FooterTrustBar config={footer.trustBar} />
 
       <div className="container mx-auto px-4 py-12 md:py-16">
         <div className="grid gap-12 lg:grid-cols-12 lg:gap-8">
           <div className="lg:col-span-5">
             <Link href="/" className="font-serif text-2xl tracking-[0.15em] uppercase">
-              {SITE_NAME}
+              {logoText}
             </Link>
             <p className="mt-4 text-sm text-muted-foreground leading-relaxed max-w-sm">
-              Modern essentials for men, women, and kids — curated quality, thoughtful design,
-              and a seamless shopping experience.
+              {footer.brand.description}
             </p>
-            <a
-              href="https://instagram.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Instagram"
-              className="mt-6 inline-flex h-10 w-10 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-foreground transition-colors"
-            >
-              <Instagram className="h-4 w-4" />
-            </a>
+            {footer.brand.socialLinks.length > 0 && (
+              <div className="mt-6 flex flex-wrap gap-2">
+                {footer.brand.socialLinks.map((s) => {
+                  const Icon = SOCIAL_ICONS[s.platform.toLowerCase()] ?? Instagram;
+                  return (
+                    <a
+                      key={s.url}
+                      href={s.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={s.platform}
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-foreground transition-colors"
+                    >
+                      <Icon className="h-4 w-4" />
+                    </a>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div className="lg:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-8">
-            <FooterColumn title="Shop" links={shop.slice(0, 6)} />
-            <FooterColumn title="Help" links={helpLinks} />
-            <FooterColumn title="Company" links={company.slice(0, 5)} />
+            {columns.map((col) => (
+              <FooterColumn key={col.title} title={col.title} links={col.links} />
+            ))}
           </div>
         </div>
 
-        <div className="mt-12 pt-10 border-t border-border/80">
-          <FooterNewsletter />
-        </div>
+        {footer.newsletter.enabled && (
+          <div className="mt-12 pt-10 border-t border-border/80">
+            <FooterNewsletter config={footer.newsletter} />
+          </div>
+        )}
       </div>
 
       <div className="border-t border-border/80 bg-background">
         <div className="container mx-auto flex flex-col gap-3 px-4 py-5 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} {SITE_NAME}. All rights reserved.
+            © {new Date().getFullYear()} {logoText}. All rights reserved.
           </p>
           <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-muted-foreground">
-            <Link href="/pages/privacy" className="hover:text-foreground">
-              Privacy
-            </Link>
-            <Link href="/pages/shipping" className="hover:text-foreground">
-              Shipping
-            </Link>
-            <Link href="/pages/about" className="hover:text-foreground">
-              About
-            </Link>
-            <a href="mailto:support@veloire.com" className="hover:text-foreground">
-              support@veloire.com
-            </a>
+            {footer.legal.links.map((link) => (
+              <Link key={link.href} href={link.href} className="hover:text-foreground">
+                {link.label}
+              </Link>
+            ))}
+            {footer.legal.supportEmail && (
+              <a
+                href={`mailto:${footer.legal.supportEmail}`}
+                className="hover:text-foreground"
+              >
+                {footer.legal.supportEmail}
+              </a>
+            )}
           </div>
         </div>
       </div>
@@ -84,7 +111,7 @@ export function SiteFooter({ shopLinks, cmsLinks = [] }: SiteFooterProps) {
   );
 }
 
-function FooterColumn({ title, links }: { title: string; links: FooterLink[] }) {
+function FooterColumn({ title, links }: { title: string; links: ThemeNavLink[] }) {
   return (
     <div>
       <h4 className="text-[11px] font-semibold uppercase tracking-[0.25em] text-foreground mb-4">
@@ -92,7 +119,7 @@ function FooterColumn({ title, links }: { title: string; links: FooterLink[] }) 
       </h4>
       <ul className="space-y-2.5">
         {links.map((link) => (
-          <li key={`${title}-${link.label}`}>
+          <li key={`${title}-${link.label}-${link.href}`}>
             <Link
               href={link.href}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"

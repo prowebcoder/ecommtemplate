@@ -5,44 +5,35 @@ import { storefrontService } from "@/server/services/storefront.service";
 import { ScrollReveal } from "@/components/shared/scroll-reveal";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { cn } from "@/lib/utils";
+import type { HomepageConfig } from "@/types/store-theme";
 
-const TILES = [
-  {
-    handle: "women",
-    tagline: "Dresses, layers & signature pieces",
-    index: "01",
-    featured: true,
-  },
-  {
-    handle: "men",
-    tagline: "Tailored essentials for every day",
-    index: "02",
-    featured: false,
-  },
-  {
-    handle: "new-arrivals",
-    tagline: "Limited drops — shop before they go",
-    index: "03",
-    featured: false,
-  },
-  {
-    handle: "sale",
-    tagline: "Seasonal edits up to 40% off",
-    index: "04",
-    featured: false,
-    accent: true,
-  },
-] as const;
+type FeaturedCategoriesProps = {
+  section: HomepageConfig["featuredSection"];
+};
 
-export async function FeaturedCategories() {
+export async function FeaturedCategories({ section }: FeaturedCategoriesProps) {
+  if (!section.enabled || !section.tiles.length) return null;
+
   const collections = await storefrontService.getCollections();
-  const byHandle = new Map(collections.filter((c) => c.image).map((c) => [c.handle, c]));
+  const byHandle = new Map(collections.map((c) => [c.handle, c]));
 
-  const items = TILES.map((t) => {
-    const col = byHandle.get(t.handle);
-    if (!col) return null;
-    return { ...col, ...t };
-  }).filter(Boolean) as Array<{
+  const items = section.tiles
+    .map((tile, index) => {
+      const col = byHandle.get(tile.handle);
+      const image = tile.imageUrl ?? col?.image;
+      if (!image) return null;
+      return {
+        id: col?.id ?? tile.handle,
+        handle: tile.handle,
+        title: tile.title ?? col?.title ?? tile.handle,
+        image,
+        tagline: tile.tagline,
+        index: String(index + 1).padStart(2, "0"),
+        featured: !!tile.featured,
+        accent: !!tile.accent,
+      };
+    })
+    .filter(Boolean) as Array<{
     id: string;
     handle: string;
     title: string;
@@ -64,11 +55,11 @@ export async function FeaturedCategories() {
       <div className="container relative mx-auto px-4 py-16 md:py-24">
         <ScrollReveal>
           <SectionHeading
-            eyebrow="Shop by category"
-            title="The edit"
-            subtitle="Four destinations — one wardrobe refresh."
-            href="/collections/new-arrivals"
-            linkLabel="Browse all"
+            eyebrow={section.eyebrow}
+            title={section.title}
+            subtitle={section.subtitle}
+            href={section.linkHref}
+            linkLabel={section.linkLabel}
           />
         </ScrollReveal>
 
