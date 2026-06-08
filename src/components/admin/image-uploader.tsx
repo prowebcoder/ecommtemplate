@@ -53,7 +53,7 @@ export function ImageUploader({ onUploaded }: { onUploaded: (url: string) => voi
       </Button>
       {error && <p className="text-xs text-destructive">{error}</p>}
       <p className="text-[11px] text-muted-foreground">
-        Requires Cloudflare R2 env vars. Max 5 MB.
+        Uploads to Vercel Blob. Max 5 MB.
       </p>
     </div>
   );

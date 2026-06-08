@@ -1,21 +1,44 @@
 import type { NextConfig } from "next";
 
+const PRODUCT_IMAGE_HOSTS = [
+  "*.public.blob.vercel-storage.com",
+  "picsum.photos",
+  "fastly.picsum.photos",
+  "i.picsum.photos",
+  "varsityheadwear.com",
+  "betterbasics.co.in",
+  "ik.imagekit.io",
+  "m.media-amazon.com",
+  "cdn19.nnnow.com",
+  "www.selectedhomme.in",
+  "veirdo.in",
+  "xcdn.next.co.uk",
+  "theholistik.com",
+  "www.shopdraftkings.com",
+  "assets.myntassets.com",
+  "cdn05.nnnow.com",
+  "bananaclub.co.in",
+  "image.hm.com",
+  "pashtush.in",
+  "www.veromoda.in",
+  "static.cilory.com",
+  "redroseindia.in",
+  "glamorous.com",
+  "cdn.shopify.com",
+  "cdn.fynd.com",
+  "www.reona.ca",
+  "media.houseofbruar.com",
+  "lizzys.ca",
+  "d1pdzcnm6xgxlz.cloudfront.net",
+  "www.koai.in",
+] as const;
+
 const nextConfig: NextConfig = {
   images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "picsum.photos",
-      },
-      {
-        protocol: "https",
-        hostname: "fastly.picsum.photos",
-      },
-      {
-        protocol: "https",
-        hostname: "i.picsum.photos",
-      },
-    ],
+    remotePatterns: PRODUCT_IMAGE_HOSTS.map((hostname) => ({
+      protocol: "https" as const,
+      hostname,
+    })),
     formats: ["image/avif", "image/webp"],
   },
   experimental: {

@@ -1,13 +1,16 @@
 import { requireSuperAdminOrVendor } from "@/lib/auth-utils";
-import { uploadToR2, isR2Configured } from "@/lib/r2";
+import { isBlobStorageConfigured, uploadToBlobStorage } from "@/lib/blob-storage";
 import { toErrorResponse } from "@/server/errors/app-error";
 import { AppError } from "@/server/errors/app-error";
 
 export async function POST(req: Request) {
   try {
     await requireSuperAdminOrVendor();
-    if (!isR2Configured()) {
-      throw new AppError("Image upload is not configured. Set R2 env variables.", 503);
+    if (!isBlobStorageConfigured()) {
+      throw new AppError(
+        "Image upload is not configured. Set BLOB_READ_WRITE_TOKEN (run vercel env pull for local dev).",
+        503
+      );
     }
     const formData = await req.formData();
     const file = formData.get("file");
@@ -21,7 +24,7 @@ export async function POST(req: Request) {
       throw new AppError("Image must be under 5 MB", 400);
     }
     const folder = String(formData.get("folder") || "products");
-    const url = await uploadToR2(file, folder);
+    const url = await uploadToBlobStorage(file, folder);
     return Response.json({ url });
   } catch (error) {
     return toErrorResponse(error);
