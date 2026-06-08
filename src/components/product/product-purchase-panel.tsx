@@ -95,10 +95,16 @@ export function ProductPurchasePanel({
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <RatingStars rating={product.rating} reviewCount={product.reviewCount} showCount size="md" />
           <Link
+            href="#reviews"
+            className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            Reviews ({product.reviewCount})
+          </Link>
+          <Link
             href="#product-details"
             className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
           >
-            Product details
+            Details
           </Link>
           <span className="hidden sm:inline h-3 w-px bg-border" />
           <div className={cn("flex items-center gap-2 text-sm font-medium", stockStatus.className)}>

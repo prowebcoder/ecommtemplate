@@ -1,9 +1,11 @@
 import { Suspense } from "react";
 import { heroImage } from "@/lib/catalog-images";
 import { storeThemeService } from "@/server/services/store-theme.service";
+import { reviewService } from "@/server/services/review.service";
 import { HeroBanner } from "@/components/home/hero-banner";
 import { FeaturedCategories } from "@/components/home/featured-categories";
 import { HomeProductRow } from "@/components/home/home-product-row";
+import { CustomerReviews } from "@/components/home/customer-reviews";
 
 function RowSkeleton() {
   return (
@@ -19,7 +21,10 @@ function RowSkeleton() {
 }
 
 export default async function HomePage() {
-  const homepage = await storeThemeService.getHomepage();
+  const [homepage, featuredReviews] = await Promise.all([
+    storeThemeService.getHomepage(),
+    reviewService.getFeatured(4),
+  ]);
   const { hero, quickLinks, featuredSection, productRows } = homepage;
 
   return (
@@ -52,6 +57,7 @@ export default async function HomePage() {
             />
           </Suspense>
         ))}
+      <CustomerReviews reviews={featuredReviews} />
     </div>
   );
 }

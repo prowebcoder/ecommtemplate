@@ -287,6 +287,78 @@ async function main() {
     });
   }
 
+  const customer = await prisma.user.findUnique({
+    where: { email: "customer@veloire.com" },
+    select: { id: true },
+  });
+
+  const seedReviews = [
+    {
+      handle: "premium-cotton-crew-tee",
+      rating: 5,
+      title: "Exceptional quality",
+      body: "The fabric quality is exceptional. Fits perfectly and feels premium all day.",
+    },
+    {
+      handle: "yoga-leggings",
+      rating: 5,
+      title: "So comfortable",
+      body: "Finally found leggings that are comfortable and stylish for yoga and everyday wear. Will buy again!",
+    },
+    {
+      handle: "performance-jogger",
+      rating: 4,
+      title: "Great for workouts",
+      body: "Great joggers for workouts and casual wear. True to size and very comfortable.",
+    },
+    {
+      handle: "linen-relaxed-shirt",
+      rating: 5,
+      title: "Minimalist perfection",
+      body: "Love the minimalist design. Packaging was beautiful too. Highly recommend.",
+    },
+  ];
+
+  if (customer) {
+    for (const r of seedReviews) {
+      const productId = productIds[r.handle];
+      if (!productId) continue;
+      await prisma.review.upsert({
+        where: {
+          productId_userId: { productId, userId: customer.id },
+        },
+        update: {
+          rating: r.rating,
+          title: r.title,
+          body: r.body,
+          isApproved: true,
+        },
+        create: {
+          productId,
+          userId: customer.id,
+          rating: r.rating,
+          title: r.title,
+          body: r.body,
+          isApproved: true,
+        },
+      });
+
+      const agg = await prisma.review.aggregate({
+        where: { productId, isApproved: true },
+        _avg: { rating: true },
+        _count: true,
+      });
+      await prisma.product.update({
+        where: { id: productId },
+        data: {
+          rating: Math.round((agg._avg.rating ?? 0) * 10) / 10,
+          reviewCount: agg._count,
+        },
+      });
+    }
+    console.log(`  → ${seedReviews.length} sample reviews`);
+  }
+
   console.log("Seed complete");
   console.log(`  → ${VENDORS.length} vendors`);
   console.log(`  → ${PRODUCTS.length} products`);

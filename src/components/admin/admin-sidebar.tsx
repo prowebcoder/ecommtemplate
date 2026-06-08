@@ -15,6 +15,7 @@ const links = [
   { href: "/admin/coupons", label: "Coupons" },
   { href: "/admin/vendors", label: "Vendors" },
   { href: "/admin/customers", label: "Customers" },
+  { href: "/admin/reviews", label: "Reviews" },
   { href: "/admin/categories", label: "Categories" },
   { href: "/admin/pages", label: "Pages" },
   { href: "/admin/content", label: "Storefront" },

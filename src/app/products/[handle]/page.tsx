@@ -9,8 +9,11 @@ import { ProductViewTracker } from "@/components/product/product-view-tracker";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { ScrollReveal } from "@/components/shared/scroll-reveal";
 import { buildMetadata } from "@/lib/seo";
+import { ProductReviews } from "@/components/product/product-reviews";
 import { productService } from "@/server/services/product.service";
+import { reviewService } from "@/server/services/review.service";
 import { storefrontService } from "@/server/services/storefront.service";
+import { getSessionUser } from "@/lib/auth-utils";
 import { AppError } from "@/server/errors/app-error";
 
 export const dynamic = "force-dynamic";
@@ -40,11 +43,14 @@ export default async function ProductPage({ params }: Props) {
   let product;
   let related;
   let globalSizeChart;
+  let reviewData;
   try {
-    [product, related, globalSizeChart] = await Promise.all([
-      productService.getByHandle(handle),
+    const sessionUser = await getSessionUser();
+    product = await productService.getByHandle(handle);
+    [related, globalSizeChart, reviewData] = await Promise.all([
       productService.getRelated(handle),
       storefrontService.getSizeChart(),
+      reviewService.listForProduct(product.id, sessionUser?.id),
     ]);
   } catch (e) {
     if (e instanceof AppError && e.statusCode === 404) notFound();
@@ -91,6 +97,20 @@ export default async function ProductPage({ params }: Props) {
             </div>
           </div>
         </div>
+
+        <section className="mt-14 md:mt-20 border-t border-border/60">
+          <div className="container mx-auto px-4 py-12 md:py-16">
+            <ProductReviews
+              productId={product.id}
+              productHandle={product.handle}
+              productTitle={product.title}
+              rating={product.rating}
+              reviewCount={product.reviewCount}
+              initialReviews={reviewData.reviews}
+              initialUserReview={reviewData.userReview}
+            />
+          </div>
+        </section>
 
         {related.length > 0 && (
           <section className="mt-14 md:mt-20 border-t border-border/60 bg-secondary/25">
