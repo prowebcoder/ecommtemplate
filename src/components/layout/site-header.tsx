@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useRef, useLayoutEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Search, Heart, User, ShoppingBag, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AnnouncementBar } from "./announcement-bar";
@@ -18,6 +18,9 @@ import type { HeaderConfig, MegaMenuItem } from "@/types/store-theme";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { cn } from "@/lib/utils";
 
+const SCROLL_HIDE_AT = 32;
+const SCROLL_SHOW_AT = 8;
+
 type SiteHeaderProps = {
   header: HeaderConfig;
   megaMenu: MegaMenuItem[];
@@ -25,9 +28,11 @@ type SiteHeaderProps = {
 
 export function SiteHeader({ header, megaMenu }: SiteHeaderProps) {
   const menuItems = megaMenu;
+  const headerRef = useRef<HTMLElement>(null);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [compact, setCompact] = useState(false);
+  const [headerHeight, setHeaderHeight] = useState(64);
   const hydrated = useHydrated();
   const itemCount = useCartStore((s) => s.getItemCount());
   const openCart = useCartStore((s) => s.openCart);
@@ -39,25 +44,79 @@ export function SiteHeader({ header, megaMenu }: SiteHeaderProps) {
   const displayWishlistCount = hydrated ? wishlistCount : 0;
   const accountHref = isAuthenticated ? "/account/profile" : "/account/login";
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+  const showAnnouncementBar = header.announcement.enabled && header.announcement.items.length > 0;
+  const collapseAnnouncement = showAnnouncementBar && compact;
+
+  const updateScrollState = useCallback(() => {
+    const y = window.scrollY;
+    setCompact((prev) => {
+      if (!prev && y > SCROLL_HIDE_AT) return true;
+      if (prev && y < SCROLL_SHOW_AT) return false;
+      return prev;
+    });
   }, []);
 
-  const showAnnouncement = header.announcement.enabled && !scrolled;
+  useLayoutEffect(() => {
+    updateScrollState();
+  }, [updateScrollState]);
+
+  useEffect(() => {
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        updateScrollState();
+        ticking = false;
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [updateScrollState]);
+
+  useEffect(() => {
+    if (!compact) return;
+    setActiveMenu(null);
+    setMobileOpen(false);
+  }, [compact]);
+
+  useLayoutEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+
+    const measure = () => setHeaderHeight(el.getBoundingClientRect().height);
+
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [collapseAnnouncement, mobileOpen, showAnnouncementBar, menuItems.length]);
 
   return (
     <>
       <header
-        className="sticky top-0 z-50 bg-background"
-        style={{ "--header-height": scrolled ? "64px" : "104px" } as React.CSSProperties}
+        ref={headerRef}
+        className="sticky top-0 z-50 bg-background isolate"
+        style={{ "--header-height": `${headerHeight}px` } as React.CSSProperties}
       >
-        {showAnnouncement && <AnnouncementBar items={header.announcement.items} />}
+        {showAnnouncementBar && (
+          <div
+            className={cn(
+              "grid transition-[grid-template-rows] duration-300 ease-out",
+              collapseAnnouncement ? "grid-rows-[0fr]" : "grid-rows-[1fr]"
+            )}
+            aria-hidden={collapseAnnouncement}
+          >
+            <div className="overflow-hidden">
+              <AnnouncementBar items={header.announcement.items} />
+            </div>
+          </div>
+        )}
+
         <div
           className={cn(
-            "border-b transition-all duration-300",
-            scrolled && "shadow-sm"
+            "border-b bg-background transition-shadow duration-300",
+            compact && "shadow-sm"
           )}
         >
           <div className="container mx-auto flex h-16 items-center justify-between gap-4 px-4">
@@ -72,7 +131,7 @@ export function SiteHeader({ header, megaMenu }: SiteHeaderProps) {
 
             <Link
               href={header.logo.href}
-              className="font-serif text-xl tracking-[0.2em] uppercase md:text-2xl flex items-center gap-2"
+              className="font-serif text-xl tracking-[0.2em] uppercase md:text-2xl flex items-center gap-2 shrink-0"
             >
               {header.logo.imageUrl ? (
                 <Image
@@ -81,6 +140,7 @@ export function SiteHeader({ header, megaMenu }: SiteHeaderProps) {
                   width={120}
                   height={32}
                   className="h-8 w-auto object-contain"
+                  priority
                 />
               ) : (
                 header.logo.text
@@ -115,7 +175,7 @@ export function SiteHeader({ header, megaMenu }: SiteHeaderProps) {
               ))}
             </nav>
 
-            <div className="flex items-center gap-1 sm:gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
               <Button
                 variant="ghost"
                 size="icon"
@@ -166,43 +226,47 @@ export function SiteHeader({ header, megaMenu }: SiteHeaderProps) {
             activeMenu={activeMenu}
             onClose={() => setActiveMenu(null)}
             items={menuItems}
+            headerHeight={headerHeight}
           />
         </div>
 
-        {mobileOpen && (
-          <motion.nav
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="border-b lg:hidden"
-          >
-            <div className="container mx-auto space-y-4 px-4 py-6">
-              {menuItems.map((item) => (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className="block text-sm font-medium"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  {item.label}
-                </Link>
-              ))}
-              {header.extraLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={cn(
-                    "block text-sm font-medium",
-                    link.highlight && "text-destructive"
-                  )}
-                  onClick={() => setMobileOpen(false)}
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
-          </motion.nav>
-        )}
+        <AnimatePresence initial={false}>
+          {mobileOpen && (
+            <motion.nav
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="overflow-hidden border-b lg:hidden"
+            >
+              <div className="container mx-auto space-y-4 px-4 py-6">
+                {menuItems.map((item) => (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className="block text-sm font-medium"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+                {header.extraLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={cn(
+                      "block text-sm font-medium",
+                      link.highlight && "text-destructive"
+                    )}
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            </motion.nav>
+          )}
+        </AnimatePresence>
       </header>
 
       <SearchDialog />

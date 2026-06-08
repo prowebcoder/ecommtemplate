@@ -9,9 +9,10 @@ type MegaMenuProps = {
   activeMenu: string | null;
   onClose: () => void;
   items: MegaMenuItem[];
+  headerHeight: number;
 };
 
-export function MegaMenu({ activeMenu, onClose, items }: MegaMenuProps) {
+export function MegaMenu({ activeMenu, onClose, items, headerHeight }: MegaMenuProps) {
   const menu = items.find((m) => m.label === activeMenu);
 
   return (
@@ -22,7 +23,8 @@ export function MegaMenu({ activeMenu, onClose, items }: MegaMenuProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 top-[var(--header-height)] z-40 bg-black/20"
+            className="fixed inset-x-0 bottom-0 z-40 bg-black/20"
+            style={{ top: headerHeight }}
             onClick={onClose}
           />
           <motion.div

@@ -36,7 +36,7 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
   html {
-    scroll-behavior: smooth;
+    scroll-behavior: auto;
   }
   h1,
   h2,
@@ -55,5 +55,19 @@
   }
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+
+  .announcement-track {
+    width: max-content;
+    animation: announcement-marquee 25s linear infinite;
+  }
+
+  @keyframes announcement-marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
   }
 }
