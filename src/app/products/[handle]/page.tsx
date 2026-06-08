@@ -9,6 +9,7 @@ import { ProductViewTracker } from "@/components/product/product-view-tracker";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { ScrollReveal } from "@/components/shared/scroll-reveal";
 import { buildMetadata } from "@/lib/seo";
+import { getSiteSeo } from "@/lib/site-seo";
 import { ProductReviews } from "@/components/product/product-reviews";
 import { productService } from "@/server/services/product.service";
 import { reviewService } from "@/server/services/review.service";
@@ -25,13 +26,19 @@ type Props = {
 export async function generateMetadata({ params }: Props) {
   try {
     const { handle } = await params;
-    const product = await productService.getByHandle(handle);
-    return buildMetadata({
-      title: product.title,
-      description: product.description,
-      path: `/products/${handle}`,
-      image: product.featuredImage,
-    });
+    const [product, seo] = await Promise.all([
+      productService.getByHandle(handle),
+      getSiteSeo(),
+    ]);
+    return buildMetadata(
+      {
+        title: product.title,
+        description: product.description,
+        path: `/products/${handle}`,
+        image: product.featuredImage,
+      },
+      seo
+    );
   } catch {
     return {};
   }

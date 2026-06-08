@@ -5,6 +5,7 @@ import { productService } from "@/server/services/product.service";
 import { storefrontService } from "@/server/services/storefront.service";
 import { CollectionListing } from "@/components/collection/collection-listing";
 import { buildMetadata } from "@/lib/seo";
+import { getSiteSeo } from "@/lib/site-seo";
 import { collectionJsonLd } from "@/lib/structured-data";
 
 type Props = {
@@ -13,14 +14,20 @@ type Props = {
 
 export async function generateMetadata({ params }: Props) {
   const { handle } = await params;
-  const collection = await storefrontService.getCollection(handle);
+  const [collection, seo] = await Promise.all([
+    storefrontService.getCollection(handle),
+    getSiteSeo(),
+  ]);
   if (!collection) return {};
-  return buildMetadata({
-    title: collection.title,
-    description: collection.description ?? undefined,
-    path: `/collections/${handle}`,
-    image: collection.image ?? undefined,
-  });
+  return buildMetadata(
+    {
+      title: collection.title,
+      description: collection.description ?? undefined,
+      path: `/collections/${handle}`,
+      image: collection.image ?? undefined,
+    },
+    seo
+  );
 }
 
 export default async function CollectionPage({ params }: Props) {

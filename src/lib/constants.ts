@@ -1,5 +1,8 @@
 export const SITE_NAME = "Veloire";
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://veloire.com";
+export const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  process.env.NEXT_PUBLIC_APP_URL ??
+  "https://veloire.com";
 export const SITE_DESCRIPTION =
   "Premium fashion essentials for men, women, and kids. Discover curated collections with timeless style and exceptional quality.";
 export const FREE_SHIPPING_THRESHOLD = 1999;

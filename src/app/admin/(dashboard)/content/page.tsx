@@ -4,11 +4,12 @@ import { StoreContentTabs } from "@/components/admin/store-content-tabs";
 import { SizeChartEditor } from "@/components/admin/size-chart-editor";
 
 export default async function AdminContentPage() {
-  const [homepage, header, footer, sizeChart, collections, categories] =
+  const [homepage, header, footer, seo, sizeChart, collections, categories] =
     await Promise.all([
       storeThemeService.getHomepage(),
       storeThemeService.getHeader(),
       storeThemeService.getFooter(),
+      storeThemeService.getSeo(),
       storefrontService.getSizeChart(),
       storefrontService.getCollections(),
       storefrontService.getCategories(),
@@ -19,8 +20,8 @@ export default async function AdminContentPage() {
       <div>
         <h1 className="font-serif text-3xl mb-2">Storefront</h1>
         <p className="text-sm text-muted-foreground max-w-2xl">
-          Customize the homepage, header navigation, footer links, images, and trust
-          bar. CMS pages (About, Privacy, etc.) are still managed under{" "}
+          Customize the homepage, header, footer, logo, favicon, SEO meta tags, and
+          analytics. CMS page content & per-page SEO are under{" "}
           <span className="font-medium">Pages</span>.
         </p>
       </div>
@@ -28,6 +29,7 @@ export default async function AdminContentPage() {
         homepage={homepage}
         header={header}
         footer={footer}
+        seo={seo}
         collections={collections.map((c) => ({ handle: c.handle, title: c.title }))}
         categories={categories.map((c) => ({ handle: c.slug, title: c.name }))}
       />

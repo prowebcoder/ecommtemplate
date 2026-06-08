@@ -1,13 +1,22 @@
 import { heroImage, navImage } from "@/lib/catalog-images";
 import { MEGA_MENU, FOOTER_LINKS } from "@/data/navigation";
-import { ANNOUNCEMENTS, SITE_NAME } from "@/lib/constants";
+import { ANNOUNCEMENTS, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/constants";
 import { siteConfig } from "@/config/site";
 import { formatPrice } from "@/lib/utils";
 import type {
   FooterConfig,
   HeaderConfig,
   HomepageConfig,
+  SiteSeoConfig,
 } from "@/types/store-theme";
+
+export const DEFAULT_SEO: SiteSeoConfig = {
+  siteName: SITE_NAME,
+  defaultMetaTitle: SITE_NAME,
+  defaultMetaDescription: SITE_DESCRIPTION,
+  defaultOgImage: "/og-default.jpg",
+  siteUrl: SITE_URL,
+};
 
 export const DEFAULT_HEADER: HeaderConfig = {
   announcement: {

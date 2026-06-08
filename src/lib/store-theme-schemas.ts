@@ -93,6 +93,19 @@ export const footerConfigSchema = z.object({
   }),
 });
 
+export const seoConfigSchema = z.object({
+  siteName: z.string().min(1),
+  defaultMetaTitle: z.string().min(1),
+  defaultMetaDescription: z.string().min(1),
+  defaultOgImage: z.string().optional(),
+  faviconUrl: z.string().optional(),
+  logoUrl: z.string().optional(),
+  siteUrl: z.string().url(),
+  metaKeywords: z.string().optional(),
+  googleAnalyticsId: z.string().optional(),
+  googleTagManagerId: z.string().optional(),
+});
+
 export const homepageConfigSchema = z.object({
   hero: z.object({
     title: z.string().min(1),

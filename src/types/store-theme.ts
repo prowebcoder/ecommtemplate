@@ -96,6 +96,20 @@ export type HomepageProductRow = {
   muted: boolean;
 };
 
+export type SiteSeoConfig = {
+  siteName: string;
+  /** Homepage & fallback `<title>` when a page has no custom SEO title */
+  defaultMetaTitle: string;
+  defaultMetaDescription: string;
+  defaultOgImage?: string;
+  faviconUrl?: string;
+  logoUrl?: string;
+  siteUrl: string;
+  metaKeywords?: string;
+  googleAnalyticsId?: string;
+  googleTagManagerId?: string;
+};
+
 export type HomepageConfig = {
   hero: {
     title: string;

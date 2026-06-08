@@ -3,17 +3,20 @@ import {
   DEFAULT_FOOTER,
   DEFAULT_HEADER,
   DEFAULT_HOMEPAGE,
+  DEFAULT_SEO,
 } from "@/lib/store-theme-defaults";
 import type {
   FooterConfig,
   HeaderConfig,
   HomepageConfig,
+  SiteSeoConfig,
 } from "@/types/store-theme";
 
 const KEYS = {
   header: "store.header",
   footer: "store.footer",
   homepage: "store.homepage",
+  seo: "store.seo",
   legacyHero: "homepage.hero",
 } as const;
 
@@ -102,6 +105,35 @@ export class StoreThemeService {
     await writeSetting(KEYS.homepage, value);
     await writeSetting(KEYS.legacyHero, value.hero);
     return value;
+  }
+
+  async getSeo(): Promise<SiteSeoConfig> {
+    return readSetting(KEYS.seo, DEFAULT_SEO);
+  }
+
+  async updateSeo(value: SiteSeoConfig) {
+    const cleaned: SiteSeoConfig = {
+      ...value,
+      googleAnalyticsId: value.googleAnalyticsId?.trim() || undefined,
+      googleTagManagerId: value.googleTagManagerId?.trim() || undefined,
+      metaKeywords: value.metaKeywords?.trim() || undefined,
+      faviconUrl: value.faviconUrl?.trim() || undefined,
+      logoUrl: value.logoUrl?.trim() || undefined,
+      defaultOgImage: value.defaultOgImage?.trim() || undefined,
+    };
+    await writeSetting(KEYS.seo, cleaned);
+
+    const header = await this.getHeader();
+    await this.updateHeader({
+      ...header,
+      logo: {
+        ...header.logo,
+        text: cleaned.siteName,
+        imageUrl: cleaned.logoUrl ?? header.logo.imageUrl,
+      },
+    });
+
+    return cleaned;
   }
 }
 

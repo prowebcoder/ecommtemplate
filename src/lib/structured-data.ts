@@ -1,5 +1,6 @@
 import type { Product } from "@/types/product";
 import type { Collection } from "@/types/collection";
+import type { SiteSeoConfig } from "@/types/store-theme";
 import { SITE_NAME, SITE_URL } from "./constants";
 
 export function productJsonLd(product: Product) {
@@ -39,13 +40,17 @@ export function collectionJsonLd(collection: Collection) {
   };
 }
 
-export function organizationJsonLd() {
+export function organizationJsonLd(seo?: Pick<SiteSeoConfig, "siteName" | "siteUrl" | "logoUrl">) {
+  const name = seo?.siteName ?? SITE_NAME;
+  const url = seo?.siteUrl ?? SITE_URL;
+  const logo = seo?.logoUrl ?? `${url.replace(/\/$/, "")}/logo.png`;
+
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: SITE_NAME,
-    url: SITE_URL,
-    logo: `${SITE_URL}/logo.png`,
+    name,
+    url,
+    logo,
     sameAs: [
       "https://instagram.com/veloire",
       "https://facebook.com/veloire",

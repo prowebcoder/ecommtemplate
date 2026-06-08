@@ -5,12 +5,19 @@ import { cn } from "@/lib/utils";
 import { HomepageLayoutEditor } from "@/components/admin/homepage-layout-editor";
 import { HeaderEditor } from "@/components/admin/header-editor";
 import { FooterEditor } from "@/components/admin/footer-editor";
-import type { FooterConfig, HeaderConfig, HomepageConfig } from "@/types/store-theme";
+import { SeoSettingsEditor } from "@/components/admin/seo-settings-editor";
+import type {
+  FooterConfig,
+  HeaderConfig,
+  HomepageConfig,
+  SiteSeoConfig,
+} from "@/types/store-theme";
 
 const TABS = [
   { id: "homepage", label: "Homepage" },
   { id: "header", label: "Header" },
   { id: "footer", label: "Footer" },
+  { id: "seo", label: "SEO & Analytics" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -21,12 +28,14 @@ export function StoreContentTabs({
   homepage,
   header,
   footer,
+  seo,
   collections,
   categories,
 }: {
   homepage: HomepageConfig;
   header: HeaderConfig;
   footer: FooterConfig;
+  seo: SiteSeoConfig;
   collections: PickerOption[];
   categories: PickerOption[];
 }) {
@@ -60,6 +69,7 @@ export function StoreContentTabs({
       )}
       {tab === "header" && <HeaderEditor initial={header} />}
       {tab === "footer" && <FooterEditor initial={footer} />}
+      {tab === "seo" && <SeoSettingsEditor initial={seo} />}
     </div>
   );
 }

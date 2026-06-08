@@ -220,7 +220,7 @@ async function main() {
     },
   });
 
-  const { DEFAULT_HEADER, DEFAULT_FOOTER, DEFAULT_HOMEPAGE } = await import(
+  const { DEFAULT_HEADER, DEFAULT_FOOTER, DEFAULT_HOMEPAGE, DEFAULT_SEO } = await import(
     "../src/lib/store-theme-defaults"
   );
 
@@ -240,6 +240,12 @@ async function main() {
     where: { key: "store.homepage" },
     update: { value: DEFAULT_HOMEPAGE },
     create: { key: "store.homepage", value: DEFAULT_HOMEPAGE },
+  });
+
+  await prisma.siteSetting.upsert({
+    where: { key: "store.seo" },
+    update: { value: DEFAULT_SEO },
+    create: { key: "store.seo", value: DEFAULT_SEO },
   });
 
   await prisma.siteSetting.upsert({

@@ -1,18 +1,25 @@
 import { notFound } from "next/navigation";
 import { storefrontService } from "@/server/services/storefront.service";
 import { buildMetadata } from "@/lib/seo";
+import { getSiteSeo } from "@/lib/site-seo";
 
 type Props = { params: Promise<{ handle: string }> };
 
 export async function generateMetadata({ params }: Props) {
   const { handle } = await params;
-  const page = await storefrontService.getPublishedPage(handle);
+  const [page, seo] = await Promise.all([
+    storefrontService.getPublishedPage(handle),
+    getSiteSeo(),
+  ]);
   if (!page) return {};
-  return buildMetadata({
-    title: page.seoTitle ?? page.title,
-    description: page.seoDescription ?? undefined,
-    path: `/pages/${handle}`,
-  });
+  return buildMetadata(
+    {
+      title: page.seoTitle ?? page.title,
+      description: page.seoDescription ?? undefined,
+      path: `/pages/${handle}`,
+    },
+    seo
+  );
 }
 
 export default async function CmsPage({ params }: Props) {
