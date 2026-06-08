@@ -9,13 +9,13 @@ const upsertSchema = z.object({
   body: z.string().min(10, "Review must be at least 10 characters").max(2000),
 });
 
-type Props = { params: Promise<{ id: string }> };
+type Props = { params: Promise<{ handle: string }> };
 
 export async function GET(_req: Request, { params }: Props) {
   try {
-    const { id } = await params;
+    const { handle } = await params;
     const user = await getSessionUser();
-    const data = await reviewService.listForProduct(id, user?.id);
+    const data = await reviewService.listForProductHandle(handle, user?.id);
     return Response.json(data);
   } catch (error) {
     return toErrorResponse(error);
@@ -25,9 +25,9 @@ export async function GET(_req: Request, { params }: Props) {
 export async function PUT(req: Request, { params }: Props) {
   try {
     const user = await requireAuth();
-    const { id } = await params;
+    const { handle } = await params;
     const body = upsertSchema.parse(await req.json());
-    const review = await reviewService.upsert(id, user.id, body);
+    const review = await reviewService.upsertByHandle(handle, user.id, body);
     return Response.json(review);
   } catch (error) {
     return toErrorResponse(error);

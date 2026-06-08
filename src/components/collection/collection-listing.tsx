@@ -6,12 +6,17 @@ import { fetchProductFacets } from "@/lib/api";
 import { DEFAULT_PRICE_MAX } from "@/lib/product-list-params";
 import { CollectionFilters } from "./collection-filters";
 import { InfiniteProductList } from "./infinite-product-list";
+import type { ProductsPage } from "@/hooks/use-infinite-products";
 
 type CollectionListingProps = {
   collectionHandle: string;
+  initialPage?: ProductsPage;
 };
 
-export function CollectionListing({ collectionHandle }: CollectionListingProps) {
+export function CollectionListing({
+  collectionHandle,
+  initialPage,
+}: CollectionListingProps) {
   const { data: facets } = useQuery({
     queryKey: ["product-facets", collectionHandle],
     queryFn: () => fetchProductFacets(collectionHandle),
@@ -38,6 +43,7 @@ export function CollectionListing({ collectionHandle }: CollectionListingProps) 
           <InfiniteProductList
             collectionHandle={collectionHandle}
             priceBounds={priceBounds}
+            initialPage={initialPage}
           />
         </Suspense>
       </div>

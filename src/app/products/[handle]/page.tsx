@@ -101,7 +101,6 @@ export default async function ProductPage({ params }: Props) {
         <section className="mt-14 md:mt-20 border-t border-border/60">
           <div className="container mx-auto px-4 py-12 md:py-16">
             <ProductReviews
-              productId={product.id}
               productHandle={product.handle}
               productTitle={product.title}
               rating={product.rating}

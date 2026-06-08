@@ -15,20 +15,18 @@ import { cn } from "@/lib/utils";
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
 type ProductReviewFormProps = {
-  productId: string;
-  productHandle?: string;
+  productHandle: string;
   initialReview?: ProductReview | null;
   onSaved?: (review: ProductReview) => void;
 };
 
 export function ProductReviewForm({
-  productId,
   productHandle,
   initialReview,
   onSaved,
 }: ProductReviewFormProps) {
   const router = useRouter();
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const [rating, setRating] = useState(initialReview?.rating ?? 0);
   const [title, setTitle] = useState(initialReview?.title ?? "");
   const [body, setBody] = useState(initialReview?.body ?? "");
@@ -43,8 +41,16 @@ export function ProductReviewForm({
     })
   );
 
+  const loginUrl = `/account/login?callbackUrl=${encodeURIComponent(
+    `/products/${productHandle}#reviews`
+  )}`;
+
   const saveReview = useCallback(
     async (payload: { rating: number; title: string; body: string }) => {
+      if (!session?.user) {
+        router.push(loginUrl);
+        return;
+      }
       if (payload.rating < 1 || payload.body.trim().length < 10) return;
 
       const snapshot = JSON.stringify(payload);
@@ -54,7 +60,7 @@ export function ProductReviewForm({
       setError("");
 
       try {
-        const res = await fetch(`/api/products/${productId}/reviews`, {
+        const res = await fetch(`/api/products/${productHandle}/reviews`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -76,17 +82,18 @@ export function ProductReviewForm({
         setError(err instanceof Error ? err.message : "Failed to save review");
       }
     },
-    [productId, onSaved, router]
+    [productHandle, onSaved, router, session?.user, loginUrl]
   );
 
   const scheduleSave = useCallback(
     (nextRating: number, nextTitle: string, nextBody: string) => {
+      if (!session?.user) return;
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
         void saveReview({ rating: nextRating, title: nextTitle, body: nextBody });
       }, 1200);
     },
-    [saveReview]
+    [saveReview, session?.user]
   );
 
   useEffect(() => {
@@ -95,35 +102,21 @@ export function ProductReviewForm({
     };
   }, []);
 
-  if (status === "loading") {
-    return (
-      <div className="rounded-sm border border-border/70 bg-card/40 p-6 animate-pulse">
-        <div className="h-4 w-32 bg-secondary rounded" />
-        <div className="h-20 w-full bg-secondary rounded mt-4" />
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (initialReview) {
+      setRating(initialReview.rating);
+      setTitle(initialReview.title ?? "");
+      setBody(initialReview.body);
+      lastSavedRef.current = JSON.stringify({
+        rating: initialReview.rating,
+        title: initialReview.title ?? "",
+        body: initialReview.body,
+      });
+    }
+  }, [initialReview]);
 
-  if (status === "unauthenticated") {
-    return (
-      <div className="rounded-sm border border-dashed border-border/80 bg-secondary/20 p-6 md:p-8 text-center">
-        <p className="text-sm text-muted-foreground">
-          Sign in to share your experience with this product.
-        </p>
-        <Button variant="luxury" className="mt-4" asChild>
-          <Link
-            href={`/account/login?callbackUrl=${encodeURIComponent(
-              productHandle ? `/products/${productHandle}#reviews` : "/"
-            )}`}
-          >
-            Sign in to review
-          </Link>
-        </Button>
-      </div>
-    );
-  }
-
-  const canAutoSave = rating >= 1 && body.trim().length >= 10;
+  const isLoggedIn = status === "authenticated" && !!session?.user;
+  const canSubmit = rating >= 1 && body.trim().length >= 10;
 
   return (
     <form
@@ -140,22 +133,35 @@ export function ProductReviewForm({
             {initialReview ? "Update your review" : "Write a review"}
           </h3>
           <p className="text-xs text-muted-foreground mt-1">
-            Your review saves automatically as you write.
+            {isLoggedIn
+              ? "Your review saves automatically as you write."
+              : "Fill in your review below, then sign in to publish it."}
           </p>
         </div>
-        <span
-          className={cn(
-            "text-[11px] font-medium uppercase tracking-wider",
-            saveStatus === "saving" && "text-muted-foreground",
-            saveStatus === "saved" && "text-emerald-700",
-            saveStatus === "error" && "text-destructive"
-          )}
-        >
-          {saveStatus === "saving" && "Saving…"}
-          {saveStatus === "saved" && "Saved"}
-          {saveStatus === "error" && "Save failed"}
-        </span>
+        {isLoggedIn && (
+          <span
+            className={cn(
+              "text-[11px] font-medium uppercase tracking-wider",
+              saveStatus === "saving" && "text-muted-foreground",
+              saveStatus === "saved" && "text-emerald-700",
+              saveStatus === "error" && "text-destructive"
+            )}
+          >
+            {saveStatus === "saving" && "Saving…"}
+            {saveStatus === "saved" && "Saved"}
+            {saveStatus === "error" && "Save failed"}
+          </span>
+        )}
       </div>
+
+      {!isLoggedIn && status !== "loading" && (
+        <div className="rounded-sm bg-secondary/40 border border-border/60 px-4 py-3 text-sm text-muted-foreground">
+          <Link href={loginUrl} className="font-medium text-foreground underline-offset-4 hover:underline">
+            Sign in
+          </Link>{" "}
+          to publish your review. You can still draft it below.
+        </div>
+      )}
 
       <div className="space-y-2">
         <Label className="text-xs uppercase tracking-wider text-muted-foreground">
@@ -211,9 +217,15 @@ export function ProductReviewForm({
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <Button type="submit" variant="luxury" disabled={!canAutoSave || saveStatus === "saving"}>
-        {saveStatus === "saving" ? "Saving…" : initialReview ? "Save changes" : "Publish review"}
-      </Button>
+      {isLoggedIn ? (
+        <Button type="submit" variant="luxury" disabled={!canSubmit || saveStatus === "saving"}>
+          {saveStatus === "saving" ? "Saving…" : initialReview ? "Save changes" : "Publish review"}
+        </Button>
+      ) : (
+        <Button type="submit" variant="luxury" disabled={!canSubmit}>
+          Sign in to publish review
+        </Button>
+      )}
     </form>
   );
 }

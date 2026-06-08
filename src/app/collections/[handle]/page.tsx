@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { Suspense } from "react";
+import { productService } from "@/server/services/product.service";
 import { storefrontService } from "@/server/services/storefront.service";
 import { CollectionListing } from "@/components/collection/collection-listing";
 import { buildMetadata } from "@/lib/seo";
@@ -26,6 +27,18 @@ export default async function CollectionPage({ params }: Props) {
   const { handle } = await params;
   const collection = await storefrontService.getCollection(handle);
   if (!collection) notFound();
+
+  const initialList = await productService.list({
+    collectionHandle: handle,
+    limit: 12,
+    page: 1,
+    sort: "featured",
+  });
+  const initialPage = {
+    products: initialList.items,
+    total: initialList.total,
+    hasMore: initialList.total > initialList.items.length,
+  };
 
   const jsonLd = collectionJsonLd({
     id: collection.id,
@@ -89,7 +102,7 @@ export default async function CollectionPage({ params }: Props) {
 
       <div className="container mx-auto px-4 py-10 md:py-14">
         <Suspense fallback={<div className="animate-pulse h-96 bg-secondary" />}>
-          <CollectionListing collectionHandle={handle} />
+          <CollectionListing collectionHandle={handle} initialPage={initialPage} />
         </Suspense>
       </div>
     </>

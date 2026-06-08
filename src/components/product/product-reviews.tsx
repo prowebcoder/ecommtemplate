@@ -1,13 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-function formatReviewDate(iso: string) {
-  return new Intl.DateTimeFormat("en-IN", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(iso));
-}
 import { ProductReviewForm } from "@/components/product/product-review-form";
 import { RatingStars } from "@/components/shared/rating-stars";
 import { ScrollReveal } from "@/components/shared/scroll-reveal";
@@ -15,8 +8,15 @@ import { SectionHeading } from "@/components/shared/section-heading";
 import type { ProductReview } from "@/types/review";
 import { cn } from "@/lib/utils";
 
+function formatReviewDate(iso: string) {
+  return new Intl.DateTimeFormat("en-IN", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(iso));
+}
+
 type ProductReviewsProps = {
-  productId: string;
   productHandle: string;
   productTitle: string;
   rating: number;
@@ -64,7 +64,6 @@ function ReviewCard({ review }: { review: ProductReview }) {
 }
 
 export function ProductReviews({
-  productId,
   productHandle,
   productTitle,
   rating,
@@ -89,8 +88,6 @@ export function ProductReviews({
     });
   };
 
-  const displayReviews = reviews;
-
   return (
     <section id="reviews" className="scroll-mt-28">
       <ScrollReveal>
@@ -109,39 +106,36 @@ export function ProductReviews({
         <RatingStars rating={rating} reviewCount={reviewCount} showCount size="md" />
       </div>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-10">
-        <div>
-          <ProductReviewForm
-            productId={productId}
-            productHandle={productHandle}
-            initialReview={userReview}
-            onSaved={handleSaved}
-          />
-        </div>
+      <div className="mt-8">
+        <ProductReviewForm
+          productHandle={productHandle}
+          initialReview={userReview}
+          onSaved={handleSaved}
+        />
+      </div>
 
-        <div className="space-y-4">
-          <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-            {displayReviews.length
-              ? `${displayReviews.length} review${displayReviews.length === 1 ? "" : "s"}`
-              : "No reviews yet"}
-          </h3>
+      <div className="mt-10 space-y-4">
+        <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+          {reviews.length
+            ? `${reviews.length} review${reviews.length === 1 ? "" : "s"}`
+            : "No reviews yet"}
+        </h3>
 
-          {displayReviews.length > 0 ? (
-            <div className="grid gap-4 sm:grid-cols-1">
-              {displayReviews.map((review, i) => (
-                <ScrollReveal key={review.id} delay={i * 0.05}>
-                  <ReviewCard review={review} />
-                </ScrollReveal>
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-sm border border-dashed border-border/70 bg-background/50 p-8 text-center">
-              <p className="text-sm text-muted-foreground">
-                Be the first to review this product.
-              </p>
-            </div>
-          )}
-        </div>
+        {reviews.length > 0 ? (
+          <div className="grid gap-4 md:grid-cols-2">
+            {reviews.map((review, i) => (
+              <ScrollReveal key={review.id} delay={i * 0.05}>
+                <ReviewCard review={review} />
+              </ScrollReveal>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-sm border border-dashed border-border/70 bg-background/50 p-8 text-center">
+            <p className="text-sm text-muted-foreground">
+              Be the first to review this product.
+            </p>
+          </div>
+        )}
       </div>
     </section>
   );

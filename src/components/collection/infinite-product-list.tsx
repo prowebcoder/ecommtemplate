@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
-import { useInfiniteProducts } from "@/hooks/use-infinite-products";
+import { useInfiniteProducts, type ProductsPage } from "@/hooks/use-infinite-products";
+import type { Product } from "@/types/product";
 import { useCollectionFilters } from "@/hooks/use-collection-filters";
 import { buildProductListParams, DEFAULT_PRICE_MAX } from "@/lib/product-list-params";
 import type { CollectionFilterBounds } from "@/hooks/use-collection-filters";
@@ -13,11 +14,13 @@ import { Button } from "@/components/ui/button";
 type InfiniteProductListProps = {
   collectionHandle?: string;
   priceBounds?: CollectionFilterBounds;
+  initialPage?: ProductsPage;
 };
 
 export function InfiniteProductList({
   collectionHandle,
   priceBounds = { priceMin: 0, priceMax: DEFAULT_PRICE_MAX },
+  initialPage,
 }: InfiniteProductListProps) {
   const { sort, filters } = useCollectionFilters(priceBounds);
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -32,10 +35,19 @@ export function InfiniteProductList({
     [filters, sort, collectionHandle, priceBounds]
   );
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isFetching } =
-    useInfiniteProducts(filterParams);
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    isFetching,
+    isError,
+    error,
+    refetch,
+  } = useInfiniteProducts(filterParams, initialPage);
 
-  const products = data?.pages.flatMap((p) => p.products) ?? [];
+  const products: Product[] = data?.pages.flatMap((p) => p.products) ?? [];
   const total = data?.pages[0]?.total ?? 0;
 
   useEffect(() => {
@@ -52,7 +64,7 @@ export function InfiniteProductList({
     return () => observer.disconnect();
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
-  if (isLoading) {
+  if (isLoading && !initialPage) {
     return (
       <div className="space-y-6">
         <div className="h-10 animate-pulse bg-secondary rounded-sm" />
@@ -61,6 +73,19 @@ export function InfiniteProductList({
             <div key={i} className="aspect-[3/4] animate-pulse bg-secondary" />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="py-16 text-center space-y-4">
+        <p className="text-muted-foreground">
+          {error instanceof Error ? error.message : "Could not load products."}
+        </p>
+        <Button variant="outline" onClick={() => refetch()}>
+          Try again
+        </Button>
       </div>
     );
   }

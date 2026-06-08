@@ -29,12 +29,31 @@ export class ReviewService {
     });
   }
 
-  async listForProduct(productId: string, userId?: string) {
+  private async requireActiveProduct(productId: string) {
     const product = await prisma.product.findUnique({
       where: { id: productId },
       select: { id: true, isActive: true },
     });
     if (!product?.isActive) throw new AppError("Product not found", 404);
+    return product;
+  }
+
+  private async requireActiveProductByHandle(handle: string) {
+    const product = await prisma.product.findFirst({
+      where: { handle, isActive: true, approvalStatus: "APPROVED" },
+      select: { id: true },
+    });
+    if (!product) throw new AppError("Product not found", 404);
+    return product;
+  }
+
+  async listForProductHandle(handle: string, userId?: string) {
+    const product = await this.requireActiveProductByHandle(handle);
+    return this.listForProduct(product.id, userId);
+  }
+
+  async listForProduct(productId: string, userId?: string) {
+    await this.requireActiveProduct(productId);
 
     const [reviews, userReview] = await Promise.all([
       prisma.review.findMany({
@@ -56,12 +75,13 @@ export class ReviewService {
     };
   }
 
+  async upsertByHandle(handle: string, userId: string, input: UpsertReviewInput) {
+    const product = await this.requireActiveProductByHandle(handle);
+    return this.upsert(product.id, userId, input);
+  }
+
   async upsert(productId: string, userId: string, input: UpsertReviewInput) {
-    const product = await prisma.product.findUnique({
-      where: { id: productId },
-      select: { id: true, isActive: true },
-    });
-    if (!product?.isActive) throw new AppError("Product not found", 404);
+    await this.requireActiveProduct(productId);
 
     const review = await prisma.review.upsert({
       where: { productId_userId: { productId, userId } },
